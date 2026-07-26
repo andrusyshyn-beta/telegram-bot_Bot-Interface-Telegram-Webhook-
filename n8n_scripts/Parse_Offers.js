@@ -11,6 +11,9 @@ for (const user of users) {
   let targetDistricts = u.District ? u.District.split(',').map(s => s.trim().toLowerCase()) : [];
   
   for (const offer of allOffers) {
+    if (offer.url && offer.url.includes('otodom')) continue;
+    if (offer.partner && offer.partner.code === 'otodom') continue;
+
     if (sentIds.includes(offer.id)) continue;
 
     let passRooms = true;
