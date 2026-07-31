@@ -11,13 +11,13 @@
           ]
         }
       },
-      "id": "41ea0af9-93b9-4a65-8fc3-7a1828a611f2",
+      "id": "cae456d6-e285-4792-8bfa-8c3cdda484f6",
       "name": "Schedule",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        -3376,
-        880
+        -1584,
+        64
       ]
     },
     {
@@ -38,17 +38,17 @@
         },
         "options": {}
       },
-      "id": "cabd07a3-60dc-448d-870b-c6902fc39a8f",
+      "id": "e66ee399-2da0-4529-b640-d7ca30fe93ca",
       "name": "Read Active Users",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        -3104,
-        1088
+        -1312,
+        272
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "iWg4OpewolnX3jra",
+          "id": "Ahn7ExgJ3tsW3gub",
           "name": "Google Sheets account"
         }
       }
@@ -57,13 +57,13 @@
       "parameters": {
         "jsCode": "return $input.all().filter(item => item.json.State === 'active');"
       },
-      "id": "14add868-3732-4d7c-9ef2-947f115a8b8b",
+      "id": "8778b3f4-6a67-496a-a828-fddb63585e1a",
       "name": "Filter Active",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2848,
-        912
+        -1056,
+        96
       ]
     },
     {
@@ -94,7 +94,7 @@
             },
             {
               "name": "filter_float_price:from",
-              "value": "4000"
+              "value": "2000"
             },
             {
               "name": "filter_float_price:to",
@@ -108,26 +108,26 @@
         },
         "options": {}
       },
-      "id": "721b7794-3d09-4aaa-83db-91b995fdf552",
+      "id": "0d289799-f972-48f0-9f04-fb72db05c459",
       "name": "OLX API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -2496,
-        832
+        -704,
+        16
       ]
     },
     {
       "parameters": {
-        "jsCode": "const results = [];\nconst allInputs = $input.all();\nconst activeUsers = $items(\"Filter Active\");\n\nfor (let i = 0; i < allInputs.length; i++) {\n  const response = allInputs[i].json;\n  const offers = response.data || [];\n  \n  const user = activeUsers[i].json;\n  const userDistrictStr = user.District || 'any';\n  // Розбиваємо райони через кому на масив\n  const userDistricts = userDistrictStr === 'district_any' || userDistrictStr === 'any' ? [] : userDistrictStr.split(',').map(d => d.trim().toLowerCase()).filter(d => d);\n\n  for (const offer of offers) {\n    const distName = (offer.location?.district?.name || '').toLowerCase();\n    \n    // Перевіряємо, чи підходить хоча б один з вибраних районів\n    if (userDistricts.length > 0) {\n      const isMatch = userDistricts.some(d => distName.includes(d));\n      if (!isMatch) continue;\n    }\n    \n    let area = '', floor = '', rent = '', deposit = '', priceStr = '';\n    \n    for (const p of offer.params || []) {\n      if (p.key === 'm') area = p.value?.label;\n      if (p.key === 'floor_select') floor = p.value?.label;\n      if (p.key === 'rent') rent = p.value?.label;\n      if (p.key === 'deposit') deposit = p.value?.label;\n      if (p.key === 'price') priceStr = p.value?.value;\n    }\n    \n    let hasOtodomPhotos = false;\n    const photos = [];\n    \n    if (offer.photos && Array.isArray(offer.photos)) {\n      for (const p of offer.photos) {\n        const photoUrl = (p.link || '').toLowerCase();\n        if (photoUrl.includes('otodom') || photoUrl.includes('uicdn') || photoUrl.includes('rfrcdn')) {\n          hasOtodomPhotos = true;\n          break; \n        }\n        photos.push({ type: 'photo', media: p.link.replace('{width}', '800').replace('{height}', '600') });\n      }\n    }\n    \n    if (hasOtodomPhotos || photos.length === 0) continue;\n    \n    let userMsg = `✨ ${user.Rooms} кімнат(и), ${area}\\n`;\n    if (priceStr) userMsg += `💰 Орендна плата - ${priceStr} PLN\\n`;\n    userMsg += `\\n📍 Варшава, ${offer.location?.district?.name || ''}\\n\\n`;\n    if (floor) userMsg += `🏢 Поверх: ${floor}\\n`;\n    if (deposit) userMsg += `💰 Кауція: ${deposit}\\n`;\n    if (rent) userMsg += `📋 Чинш: ${rent}\\n`;\n    userMsg += `\\n💬 Щоб дізнатися деталі, просто дайте відповідь на це повідомлення!`;\n    \n    let adminMsg = `[КОПІЯ] Клієнт ID: ${user['Telegram ID']}\\n${userMsg}\\n\\n🔗 ${offer.url}`;\n    \n    const userPhotos = JSON.parse(JSON.stringify(photos.slice(0, 10)));\n    userPhotos[0].caption = userMsg.substring(0, 1024);\n    \n    const adminPhotos = JSON.parse(JSON.stringify(photos.slice(0, 10)));\n    adminPhotos[0].caption = adminMsg.substring(0, 1024);\n    \n    results.push({\n      json: {\n        id: offer.id,\n        userMedia: JSON.stringify(userPhotos),\n        adminMedia: JSON.stringify(adminPhotos),\n        chatId: user['Telegram ID'],\n        adminTopicId: user['Admin Topic ID'] \n      }\n    });\n  }\n}\n\nreturn results;"
+        "jsCode": "const results = [];\nconst allInputs = $input.all();\nconst activeUsers = $items(\"Filter Active\");\n\nfor (let i = 0; i < allInputs.length; i++) {\n  const response = allInputs[i].json;\n  const offers = response.data || [];\n  \n  const user = activeUsers[i].json;\n  const userDistrictStr = user.District || 'any';\n  const userDistricts = userDistrictStr === 'district_any' || userDistrictStr === 'any' ? [] : userDistrictStr.split(',').map(d => d.trim().toLowerCase()).filter(d => d);\n\n  for (const offer of offers) {\n    // 1. АНТИ-OTODOM ФІЛЬТР\n    if (offer.url && offer.url.includes('otodom')) continue;\n    if (offer.external_url && offer.external_url.includes('otodom')) continue;\n    if (offer.partner && offer.partner.code && offer.partner.code.includes('otodom')) continue;\n\n    // 2. АНТИ-АГЕНТСТВО (Відсіюємо вотермарки типу Savills та інших агенцій)\n    const isBusinessUser = offer.user && (offer.user.business || offer.user.is_business || offer.user.company_name);\n    if (isBusinessUser) continue;\n\n    const distName = (offer.location?.district?.name || '').toLowerCase();\n    \n    // 3. ПЕРЕВІРКА РАЙОНІВ\n    if (userDistricts.length > 0) {\n      const isMatch = userDistricts.some(d => distName.includes(d));\n      if (!isMatch) continue;\n    }\n    \n    let area = '', floor = '', rent = '', deposit = '', priceStr = '';\n    let parsedPrice = 0, parsedRent = 0;\n    let isAgencyParam = false;\n    \n    // 4. ВИТЯГУВАННЯ ЦИФР ТА ПЕРЕВІРКА ПАРАМЕТРІВ\n    for (const p of offer.params || []) {\n      if (p.key === 'm') area = p.value?.label;\n      if (p.key === 'floor_select') floor = p.value?.label;\n      if (p.key === 'deposit') deposit = p.value?.label;\n      \n      // Додаткова перевірка на агентство\n      if (p.key === 'private_business') {\n        const val = p.value || {};\n        if (val.key === 'business' || String(val.label).includes('Firm') || String(val.label).includes('Biuro')) {\n          isAgencyParam = true;\n        }\n      }\n      \n      if (p.key === 'rent') {\n        rent = p.value?.label;\n        if (p.value?.key) {\n          parsedRent = parseFloat(String(p.value.key).replace(/\\s/g, '').replace(',', '.'));\n        } else if (p.value?.label) {\n          parsedRent = parseFloat(p.value.label.replace(/\\s|zł|zl/gi, '').replace(',', '.'));\n        }\n        if (isNaN(parsedRent)) parsedRent = 0;\n      }\n      \n      if (p.key === 'price') {\n        priceStr = p.value?.label || p.value?.value;\n        if (p.value?.value) {\n          parsedPrice = parseFloat(p.value.value);\n        } else if (p.value?.label) {\n          parsedPrice = parseFloat(p.value.label.replace(/\\s|zł|zl/gi, '').replace(',', '.'));\n        }\n        if (isNaN(parsedPrice)) parsedPrice = 0;\n      }\n    }\n    \n    if (isAgencyParam) continue; // Відкидаємо агентства\n    \n    // 5. ДИНАМІЧНЕ \"ВІКНО\" БЮДЖЕТУ\n    const totalCost = parsedPrice + parsedRent;\n    \n    if (user['Max Price']) {\n      const maxBudget = parseFloat(user['Max Price']);\n      if (!isNaN(maxBudget)) {\n        let minBudget = 4000;\n        \n        // Якщо клієнт шукає дорожче 6000, показуємо варіанти не дешевші ніж (Бюджет - 1500)\n        if (maxBudget > 6000) {\n          minBudget = maxBudget - 1500;\n        }\n        \n        // Відкидаємо квартири, які не потрапляють у це \"вікно\"\n        if (totalCost < minBudget || totalCost > maxBudget) {\n          continue; \n        }\n      } else {\n        if (totalCost < 4000) continue;\n      }\n    } else {\n      if (totalCost < 4000) continue;\n    }\n    \n    // 6. ФІЛЬТР ФОТОГРАФІЙ OTODOM\n    let hasOtodomPhotos = false;\n    const photos = [];\n    if (offer.photos && Array.isArray(offer.photos)) {\n      for (const p of offer.photos) {\n        const photoUrl = (p.link || '').toLowerCase();\n        if (photoUrl.includes('otodom') || photoUrl.includes('uicdn') || photoUrl.includes('rfrcdn')) {\n          hasOtodomPhotos = true;\n          break; \n        }\n        photos.push({ type: 'photo', media: p.link.replace('{width}', '800').replace('{height}', '600') });\n      }\n    }\n    \n    if (hasOtodomPhotos || photos.length === 0) continue;\n    \n    // 7. ФОРМУВАННЯ ПОВІДОМЛЕННЯ\n    let userMsg = `✨ ${user.Rooms || '?'} кімнат(и), ${area}\\n`;\n    if (priceStr) userMsg += `💰 Орендна плата - ${priceStr} PLN\\n`;\n    userMsg += `\\n📍 Варшава, ${offer.location?.district?.name || ''}\\n\\n`;\n    if (floor) userMsg += `🏢 Поверх: ${floor}\\n`;\n    if (deposit) userMsg += `💰 Кауція: ${deposit}\\n`;\n    if (rent) userMsg += `📋 Чинш: ${rent}\\n`;\n    userMsg += `\\n💬 Щоб дізнатися деталі, просто дайте відповідь на це повідомлення!`;\n    \n    let adminMsg = `[КОПІЯ] Клієнт ID: ${user['Telegram ID']}\\n${userMsg}\\n\\n🔗 ${offer.url}`;\n    \n    const userPhotos = JSON.parse(JSON.stringify(photos.slice(0, 10)));\n    userPhotos[0].caption = userMsg.substring(0, 1024);\n    const adminPhotos = JSON.parse(JSON.stringify(photos.slice(0, 10)));\n    adminPhotos[0].caption = adminMsg.substring(0, 1024);\n    \n    results.push({\n      json: {\n        id: offer.id,\n        userMedia: JSON.stringify(userPhotos),\n        adminMedia: JSON.stringify(adminPhotos),\n        chatId: user['Telegram ID'],\n        adminTopicId: user['Admin Topic ID'] \n      }\n    });\n  }\n}\n\nreturn results;"
       },
-      "id": "f38538c4-e831-4b5a-9727-ef9ae8e3257f",
+      "id": "1d1b6b71-b95c-4d35-b6f5-c8a300c6fd19",
       "name": "Parse Offers",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2112,
-        832
+        -320,
+        16
       ]
     },
     {
@@ -141,25 +141,25 @@
         },
         "sheetName": {
           "__rl": true,
-          "value": 1465269977,
+          "value": "gid=0",
           "mode": "list",
-          "cachedResultName": "Sent Items",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s/edit#gid=1465269977"
+          "cachedResultName": "Users",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s/edit#gid=0"
         },
         "options": {}
       },
-      "id": "a35d2d2b-8838-4b1d-a3ba-eba2239eca53",
+      "id": "57091f6a-5429-4738-9ba9-248e8be41a81",
       "name": "Read Sent Items",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        -3104,
-        864
+        -1312,
+        48
       ],
       "alwaysOutputData": true,
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "iWg4OpewolnX3jra",
+          "id": "Ahn7ExgJ3tsW3gub",
           "name": "Google Sheets account"
         }
       }
@@ -193,13 +193,13 @@
           }
         }
       },
-      "id": "9c089703-1642-4967-9f1e-a49bb77a5e64",
+      "id": "723b95dd-519b-457a-b8ed-44fd0305b84a",
       "name": "Send to User",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -1488,
-        912
+        304,
+        96
       ]
     },
     {
@@ -225,13 +225,13 @@
         },
         "options": {}
       },
-      "id": "2b98a61e-b834-441b-a9f7-598d0880e94f",
+      "id": "eca07825-5a03-4503-b443-776e752a011a",
       "name": "Send to Admin",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -1280,
-        912
+        512,
+        96
       ]
     },
     {
@@ -283,17 +283,17 @@
         },
         "options": {}
       },
-      "id": "441c9ac9-1733-4988-89be-58aaa7af3f2e",
+      "id": "0c9fc955-876b-4815-b4d8-83f5a28ab07c",
       "name": "Append to Sent Items",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        -1104,
-        912
+        688,
+        96
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "iWg4OpewolnX3jra",
+          "id": "Ahn7ExgJ3tsW3gub",
           "name": "Google Sheets account"
         }
       }
@@ -311,10 +311,10 @@
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.2,
       "position": [
-        -3376,
-        1056
+        -1584,
+        240
       ],
-      "id": "50e1ec3e-95e5-46ca-99d1-f7ab1aaf4b54",
+      "id": "10e6d96f-18ac-4bbe-a858-bd12b7ca85ba",
       "name": "When Executed by Another Workflow"
     },
     {
@@ -324,10 +324,10 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        -1168,
-        1168
+        624,
+        352
       ],
-      "id": "840f5eff-6bbf-4ac4-b687-300a42641d44",
+      "id": "b012a7f6-c1f5-4a18-8990-9e04f063548e",
       "name": "Wait",
       "webhookId": "8a95964b-00a1-49a2-b002-044074fc616a"
     },
@@ -338,10 +338,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -1792,
-        816
+        0,
+        0
       ],
-      "id": "be57f7e0-eb62-4618-965b-aaff40c13a87",
+      "id": "85c5d5f3-362d-441a-abc9-14c227672c58",
       "name": "Loop Over Items"
     },
     {
@@ -351,10 +351,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2112,
-        1120
+        -320,
+        304
       ],
-      "id": "886f2df2-c022-4ed7-8feb-e340f97bccf5",
+      "id": "85d1fe89-a7a1-4fc1-84ae-92c61c51acd9",
       "name": "Code in JavaScript"
     }
   ],
@@ -507,6 +507,6 @@
   "pinData": {},
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "6008c08b2f6046b36ea9f133328be24247b64899aa3efb539215f805803e547f"
+    "instanceId": "1155e189d008736c92adc62394f44b1cce35c0b3c34c76002402e5cb4854073a"
   }
 }
