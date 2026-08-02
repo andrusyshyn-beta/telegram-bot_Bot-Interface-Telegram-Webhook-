@@ -81,7 +81,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const inputData = $('Parse Input').first().json;\nconst users = $input.all();\nconst chatId = String(inputData.chatId);\n\nlet user = users.find(u => String(u.json['Telegram ID']) === chatId);\nlet state = user ? (user.json.State || 'new') : 'new';\nlet action = 'ignore';\nlet rooms = user ? (user.json.Rooms || '') : '';\n\n// ДОДАНО ОБРОБКУ /stop\nif (inputData.text === '/start') {\n  action = 'ask_rooms';\n} else if (inputData.text === '/stop') {\n  action = 'stop_bot';\n} else if (state === 'waiting_rooms' && inputData.isCallback) {\n  action = 'ask_district';\n  rooms = inputData.callbackData.replace('rooms_', '').replace('plus', '+');\n} else if (state === 'waiting_district' && inputData.isCallback) {\n  if (inputData.callbackData === 'confirm_districts' || inputData.callbackData === 'district_any') {\n    action = 'ask_price';\n  } else if (inputData.callbackData.startsWith('district_')) {\n    action = 'toggle_district';\n  }\n} else if (state === 'waiting_price' && !inputData.isCallback) {\n  if (!isNaN(inputData.text) && parseInt(inputData.text) >= 4000 && parseInt(inputData.text) <= 20000) {\n    action = 'finish';\n  } else {\n    action = 'invalid_price';\n  }\n}\n\nreturn { json: { chatId: inputData.chatId, state, action, text: inputData.text, callbackData: inputData.callbackData, messageId: inputData.messageId, rooms } };"
+        "jsCode": "const inputData = $('Parse Input').first().json;\nconst users = $input.all();\nconst chatId = String(inputData.chatId);\n\nlet user = users.find(u => String(u.json['Telegram ID']) === chatId);\nlet state = user ? (user.json.State || 'new') : 'new';\nlet action = 'ignore';\nlet rooms = user ? (user.json.Rooms || '') : '';\n\n// ДОДАНО ОБРОБКУ /stop\nif (inputData.text === '/start') {\n  action = 'ask_rooms';\n} else if (inputData.text === '/stop') {\n  action = 'stop_bot';\n} else if (state === 'waiting_rooms' && inputData.isCallback) {\n  action = 'ask_district';\n  rooms = inputData.callbackData.replace('rooms_', '').replace('plus', '+');\n} else if (state === 'waiting_district' && inputData.isCallback) {\n  if (inputData.callbackData === 'confirm_districts' || inputData.callbackData === 'district_any') {\n    action = 'ask_min_area';\n  } else if (inputData.callbackData.startsWith('district_')) {\n    action = 'toggle_district';\n  }\n} else if (state === 'waiting_min_area' && !inputData.isCallback) {\n  if (!isNaN(inputData.text) && parseInt(inputData.text) >= 10 && parseInt(inputData.text) <= 500) {\n    action = 'ask_max_area';\n  } else {\n    action = 'invalid_area';\n  }\n} else if (state === 'waiting_max_area' && !inputData.isCallback) {\n  if (!isNaN(inputData.text) && parseInt(inputData.text) >= 10 && parseInt(inputData.text) <= 500) {\n    action = 'ask_price';\n  } else {\n    action = 'invalid_area';\n  }\n} else if (state === 'waiting_price' && !inputData.isCallback) {\n  if (!isNaN(inputData.text) && parseInt(inputData.text) >= 4000 && parseInt(inputData.text) <= 20000) {\n    action = 'finish';\n  } else {\n    action = 'invalid_price';\n  }\n}\n\nreturn { json: { chatId: inputData.chatId, state, action, text: inputData.text, callbackData: inputData.callbackData, messageId: inputData.messageId, rooms } };"
       },
       "id": "e30feea7-0dc8-4a1a-af69-f236780c040e",
       "name": "Determine Action",
@@ -256,6 +256,72 @@
                 ],
                 "combinator": "and"
               }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "ask_min_area",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "ask_max_area",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "invalid_area",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
             }
           ]
         },
@@ -408,6 +474,16 @@
               "display": true,
               "type": "string",
               "canBeUsedToMatch": true
+            },
+            {
+              "id": "Min Area",
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "Max Area",
+              "type": "string",
+              "display": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -433,7 +509,7 @@
     {
       "parameters": {
         "chatId": "={{ $('Determine Action').item.json.chatId }}",
-        "text": "Район обрано! Тепер просто напишіть мені ваш максимальний бюджет (від 4000 до 20000 PLN). Наприклад: 5000",
+        "text": "Площу збережено! Тепер просто напишіть мені ваш максимальний бюджет (від 4000 до 20000 PLN). Наприклад: 5000",
         "additionalFields": {
           "appendAttribution": false
         }
@@ -475,7 +551,8 @@
           "mappingMode": "defineBelow",
           "value": {
             "State": "waiting_price",
-            "Telegram ID": "={{ $('Determine Action').item.json.chatId }}"
+            "Telegram ID": "={{ $('Determine Action').item.json.chatId }}",
+            "Max Area": "={{ $('Determine Action').item.json.text }}"
           },
           "matchingColumns": [
             "Telegram ID"
@@ -527,6 +604,15 @@
               "display": true,
               "type": "string",
               "canBeUsedToMatch": true
+            },
+            {
+              "id": "Max Area",
+              "type": "string"
+            },
+            {
+              "id": "Min Area",
+              "type": "string",
+              "display": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -622,6 +708,16 @@
               "display": true,
               "type": "string",
               "canBeUsedToMatch": true
+            },
+            {
+              "id": "Min Area",
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "Max Area",
+              "type": "string",
+              "display": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -819,6 +915,16 @@
               "display": true,
               "type": "string",
               "canBeUsedToMatch": true
+            },
+            {
+              "id": "Min Area",
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "Max Area",
+              "type": "string",
+              "display": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -1236,6 +1342,16 @@
               "type": "string",
               "canBeUsedToMatch": true,
               "removed": false
+            },
+            {
+              "id": "Min Area",
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "Max Area",
+              "type": "string",
+              "display": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -1386,6 +1502,16 @@
               "canBeUsedToMatch": true,
               "readOnly": true,
               "removed": true
+            },
+            {
+              "id": "Min Area",
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "Max Area",
+              "type": "string",
+              "display": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -1425,6 +1551,195 @@
       "id": "60b62856-714f-4a51-86ad-4cdee5f955f2",
       "name": "Send a text message2",
       "webhookId": "3404be2e-728c-4526-a7b9-ab7fb0142951",
+      "credentials": {
+        "telegramApi": {
+          "id": "nLBwPBqm4MLzA7d1",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Determine Action').item.json.chatId }}",
+        "text": "Район обрано! Тепер вкажіть мінімальну площу, яка вас цікавить (у квадратних метрах). Наприклад: 35",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "df167516-5ea5-465f-afb0-000a68698bcf",
+      "name": "Send Min Area Prompt",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        1100
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "nLBwPBqm4MLzA7d1",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "State": "waiting_min_area",
+            "Telegram ID": "={{ $('Determine Action').item.json.chatId }}"
+          },
+          "matchingColumns": [
+            "Telegram ID"
+          ],
+          "schema": [
+            {
+              "id": "Telegram ID",
+              "type": "string"
+            },
+            {
+              "id": "State",
+              "type": "string"
+            },
+            {
+              "id": "Min Area",
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "Max Area",
+              "type": "string",
+              "display": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7c0d85d2-e85b-4d42-934e-e624836d582e",
+      "name": "Save State Min Area",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        192,
+        1100
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Ahn7ExgJ3tsW3gub",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Determine Action').item.json.chatId }}",
+        "text": "Супер! А яка максимальна площа? Введіть число, наприклад: 60",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "ae4fa21d-4303-4913-a72f-31033fcc55ad",
+      "name": "Send Max Area Prompt",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        1300
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "nLBwPBqm4MLzA7d1",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "State": "waiting_max_area",
+            "Telegram ID": "={{ $('Determine Action').item.json.chatId }}",
+            "Min Area": "={{ $('Determine Action').item.json.text }}"
+          },
+          "matchingColumns": [
+            "Telegram ID"
+          ],
+          "schema": [
+            {
+              "id": "Telegram ID",
+              "type": "string"
+            },
+            {
+              "id": "State",
+              "type": "string"
+            },
+            {
+              "id": "Min Area",
+              "type": "string"
+            },
+            {
+              "id": "Max Area",
+              "type": "string",
+              "display": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fb5495cf-89c4-4398-ac6b-4b079b90d278",
+      "name": "Save State Max Area",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        192,
+        1300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Ahn7ExgJ3tsW3gub",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Determine Action').item.json.chatId }}",
+        "text": "❌ Площа має бути числом (наприклад, 40). Спробуйте ще раз:",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "87d86400-6dab-40c6-a4cb-d4a1480337b7",
+      "name": "Send Invalid Area",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        1500
+      ],
       "credentials": {
         "telegramApi": {
           "id": "nLBwPBqm4MLzA7d1",
@@ -1530,6 +1845,27 @@
         [
           {
             "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Min Area Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Max Area Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Invalid Area",
             "type": "main",
             "index": 0
           }
@@ -1714,6 +2050,28 @@
         [
           {
             "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Min Area Prompt": {
+      "main": [
+        [
+          {
+            "node": "Save State Min Area",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Max Area Prompt": {
+      "main": [
+        [
+          {
+            "node": "Save State Max Area",
             "type": "main",
             "index": 0
           }
