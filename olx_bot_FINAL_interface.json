@@ -81,7 +81,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const inputData = $('Parse Input').first().json;\nconst users = $input.all();\nconst chatId = String(inputData.chatId);\n\nlet user = users.find(u => String(u.json['Telegram ID']) === chatId);\nlet state = user ? (user.json.State || 'new') : 'new';\nlet action = 'ignore';\nlet rooms = user ? (user.json.Rooms || '') : '';\n\n// ДОДАНО ОБРОБКУ /stop\nif (inputData.text === '/start') {\n  action = 'ask_rooms';\n} else if (inputData.text === '/stop') {\n  action = 'stop_bot';\n} else if (state === 'waiting_rooms' && inputData.isCallback) {\n  action = 'ask_district';\n  rooms = inputData.callbackData.replace('rooms_', '').replace('plus', '+');\n} else if (state === 'waiting_district' && inputData.isCallback) {\n  if (inputData.callbackData === 'confirm_districts' || inputData.callbackData === 'district_any') {\n    action = 'ask_min_area';\n  } else if (inputData.callbackData.startsWith('district_')) {\n    action = 'toggle_district';\n  }\n} else if (state === 'waiting_min_area' && !inputData.isCallback) {\n  if (!isNaN(inputData.text) && parseInt(inputData.text) >= 10 && parseInt(inputData.text) <= 500) {\n    action = 'ask_max_area';\n  } else {\n    action = 'invalid_area';\n  }\n} else if (state === 'waiting_max_area' && !inputData.isCallback) {\n  if (!isNaN(inputData.text) && parseInt(inputData.text) >= 10 && parseInt(inputData.text) <= 500) {\n    action = 'ask_price';\n  } else {\n    action = 'invalid_area';\n  }\n} else if (state === 'waiting_price' && !inputData.isCallback) {\n  if (!isNaN(inputData.text) && parseInt(inputData.text) >= 4000 && parseInt(inputData.text) <= 20000) {\n    action = 'finish';\n  } else {\n    action = 'invalid_price';\n  }\n}\n\nreturn { json: { chatId: inputData.chatId, state, action, text: inputData.text, callbackData: inputData.callbackData, messageId: inputData.messageId, rooms } };"
+        "jsCode": "const inputData = $input.first().json;\nlet action = 'unknown';\nlet userState = '';\nlet userRow = null;\n\nconst users = $items(\"Google Sheets\");\nconst activeUser = users.find(u => u.json['Telegram ID'] === inputData.chatId);\n\nif (activeUser) {\n  userState = activeUser.json['State'] || '';\n  userRow = activeUser.json;\n}\n\nlet rooms = userRow ? (userRow['Rooms'] || '') : '';\n\nif (inputData.text === '/start') {\n  action = 'ask_rooms';\n} else if (inputData.text === '/stop') {\n  action = 'stop_bot';\n} else if (inputData.text === '/menu') {\n  action = 'menu';\n} else if (userState === 'waiting_rooms' && inputData.isCallback) {\n  action = 'ask_district';\n  rooms = inputData.callbackData.replace('rooms_', '').replace('plus', '+');\n} else if (userState === 'waiting_district' && inputData.isCallback) {\n  if (inputData.callbackData === 'confirm_districts' || inputData.callbackData === 'district_any') {\n    action = 'ask_min_area';\n  } else if (inputData.callbackData.startsWith('district_')) {\n    action = 'toggle_district';\n  }\n} else if (userState === 'waiting_min_area' && !inputData.isCallback) {\n  if (!isNaN(inputData.text) && parseInt(inputData.text) >= 10 && parseInt(inputData.text) <= 500) {\n    action = 'ask_max_area';\n  } else {\n    action = 'invalid_area';\n  }\n} else if (userState === 'waiting_max_area' && !inputData.isCallback) {\n  if (!isNaN(inputData.text) && parseInt(inputData.text) >= 10 && parseInt(inputData.text) <= 500) {\n    action = 'ask_price';\n  } else {\n    action = 'invalid_area';\n  }\n} else if (userState === 'waiting_price' && !inputData.isCallback) {\n  if (!isNaN(inputData.text) && parseInt(inputData.text) >= 4000 && parseInt(inputData.text) <= 20000) {\n    action = 'finish';\n  } else {\n    action = 'invalid_price';\n  }\n} else if (inputData.isCallback && inputData.callbackData.startsWith('view_')) {\n  action = 'notify_view';\n} else if (inputData.isCallback && inputData.callbackData.startsWith('ask_')) {\n  action = 'notify_ask';\n} else if (inputData.isCallback && inputData.callbackData.startsWith('hide_')) {\n  action = 'hide_message';\n}\n\nreturn {\n  json: {\n    action: action,\n    chatId: inputData.chatId,\n    text: inputData.text,\n    callbackData: inputData.callbackData,\n    callbackQueryId: inputData.callbackQueryId,\n    messageId: inputData.messageId,\n    userState: userState,\n    rooms: rooms,\n    originalMsgText: inputData.message?.text || inputData.callback_query?.message?.text || \"\"\n  }\n};"
       },
       "id": "e30feea7-0dc8-4a1a-af69-f236780c040e",
       "name": "Determine Action",
@@ -317,6 +317,66 @@
                       "type": "string",
                       "operation": "equals",
                       "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.action}}",
+                    "rightValue": "notify_view",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.action}}",
+                    "rightValue": "notify_ask",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.action}}",
+                    "rightValue": "hide_message",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
                     }
                   }
                 ],
@@ -1746,6 +1806,105 @@
           "name": "Telegram account"
         }
       }
+    },
+    {
+      "parameters": {
+        "operation": "editMessageText",
+        "chatId": "={{$json.chatId}}",
+        "messageId": "={{$json.messageId}}",
+        "text": "={{$json.originalMsgText}}\\n\\n✅ *Запит на огляд відправлено менеджерам!*",
+        "replyMarkup": "none",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "1d00bd9c-70a0-453e-83e5-b94670b7e3ba",
+      "name": "Notify View - Edit Msg",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        1500
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "nLBwPBqm4MLzA7d1",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "-1002206774618",
+        "text": "={{'🚨 *Клієнт хоче оглянути квартиру!*\\n\\nID OLX: ' + $json.callbackData.replace('view_', '') + '\\n\\n[Профіль клієнта](tg://user?id=' + $json.chatId + ')'}}",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "message_thread_id": "={{ $items(\"Google Sheets\").find(u => u.json['Telegram ID'] === $json.chatId)?.json['Admin Topic ID'] || \"1958\" }}",
+          "appendAttribution": false
+        }
+      },
+      "id": "0561d31d-a2bb-45ba-8653-22ab1988d6e2",
+      "name": "Notify View - Admin Msg",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1400,
+        1500
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "nLBwPBqm4MLzA7d1",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "answerCallbackQuery",
+        "queryId": "={{$json.callbackQueryId}}",
+        "additionalFields": {
+          "showAlert": true,
+          "text": "Просто напишіть ваше запитання прямо сюди в чат, і ми на нього відповімо!"
+        }
+      },
+      "id": "5ddf4ee0-a7f5-44ae-a398-9b8f5e4befde",
+      "name": "Notify Ask",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        1700
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "nLBwPBqm4MLzA7d1",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "editMessageText",
+        "chatId": "={{$json.chatId}}",
+        "messageId": "={{$json.messageId}}",
+        "text": "❌ Відхилено.",
+        "replyMarkup": "none",
+        "additionalFields": {}
+      },
+      "id": "702c1c39-e5bc-49be-9287-cab5d649b556",
+      "name": "Hide Message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        1900
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "nLBwPBqm4MLzA7d1",
+          "name": "Telegram account"
+        }
+      }
     }
   ],
   "connections": {
@@ -1866,6 +2025,27 @@
         [
           {
             "node": "Send Invalid Area",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify View - Edit Msg",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Ask",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Hide Message",
             "type": "main",
             "index": 0
           }
@@ -2072,6 +2252,17 @@
         [
           {
             "node": "Save State Max Area",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify View - Edit Msg": {
+      "main": [
+        [
+          {
+            "node": "Notify View - Admin Msg",
             "type": "main",
             "index": 0
           }
