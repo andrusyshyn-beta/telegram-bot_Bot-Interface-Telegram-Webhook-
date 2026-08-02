@@ -1,0 +1,764 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 2
+            }
+          ]
+        }
+      },
+      "id": "d2ddef52-79ee-4a39-b606-be49a09d6a73",
+      "name": "Schedule (збір кожні 2 год)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1584,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "5 9,20 * * *"
+            }
+          ]
+        }
+      },
+      "id": "bb706a45-1740-4f59-94d7-28a5adb22864",
+      "name": "Schedule (відправка 9:00 і 20:00)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1584,
+        512
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "b3f0de16-10a9-49b1-aed8-03ae160839b5",
+      "name": "Manual Test (збір)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1584,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst offers = response.data || [];\n\nconst allowedDistricts = ['wola', 'srodmiescie', 'mokotow', 'zoliborz', 'bialoleka', 'bemowo', 'ursynow', 'ursus', 'praga', 'wlochy', 'ochota', 'bielany', 'targowek', 'wilanow'];\nconst results = [];\n\nfor (const offer of offers) {\n  try {\n    const offerUrl = (offer.url || '').toLowerCase();\n    if (offerUrl.includes('otodom')) continue;\n    if (offer.partner && offer.partner.code) continue;\n    if (offer.external_url) continue;\n    \n    const isBusinessUser = offer.user && (offer.user.business || offer.user.is_business || offer.user.company_name);\n    if (isBusinessUser) continue;\n    \n    let hasOtodomPhotos = false;\n    if (offer.photos && Array.isArray(offer.photos)) {\n      for (const p of offer.photos) {\n        const photoUrl = (p.link || '').toLowerCase();\n        if (photoUrl.includes('otodom') || photoUrl.includes('uicdn') || photoUrl.includes('rfrcdn')) {\n          hasOtodomPhotos = true;\n          break;\n        }\n      }\n    }\n    if (hasOtodomPhotos) continue;\n    \n    const params = offer.params || [];\n    let rooms = '', is2Rooms = false, area = '', floor = '', rent = '', deposit = '';\n    let price = 0, priceStr = '', currency = 'PLN';\n    let isAgencyParam = false;\n    \n    for (const p of params) {\n      const key = p.key || '';\n      const val = p.value || {};\n      \n      if (key === 'private_business' && (val.key === 'business' || String(val.label).includes('Firm') || String(val.label).includes('Biuro'))) {\n        isAgencyParam = true;\n      }\n      \n      if (key === 'm') area = val.label || '';\n      if (key === 'rooms') {\n        rooms = val.label || '';\n        const roomKey = String(val.key || '');\n        const roomLabel = (val.label || '').toLowerCase();\n        if (roomKey === '2' || roomLabel.includes('2') || roomLabel.includes('dwa')) {\n          is2Rooms = true;\n        }\n      }\n      if (key === 'floor_select') floor = val.label || '';\n      if (key === 'rent') rent = val.label || '';\n      if (key === 'deposit') deposit = val.label || '';\n      if (key === 'price') {\n        price = parseInt(val.value) || 0;\n        priceStr = val.value || val.label || '';\n        currency = val.currency || 'PLN';\n      }\n    }\n    \n    if (isAgencyParam) continue;\n    if (!is2Rooms) continue;\n    if (price < 4000) continue;\n    \n    const cityName = (offer.location?.city?.name || '').toLowerCase();\n    const districtName = offer.location?.district?.name || '';\n    \n    if (cityName !== 'warszawa') continue;\n    \n    const districtLower = districtName.toLowerCase().replace(/ó/g, 'o').replace(/ś/g, 's').replace(/ł/g, 'l').replace(/ż/g, 'z').replace(/ź/g, 'z').replace(/ć/g, 'c').replace(/ń/g, 'n').replace(/ą/g, 'a').replace(/ę/g, 'e');\n    let isAllowedDistrict = false;\n    for (const d of allowedDistricts) {\n      if (districtLower.includes(d)) {\n        isAllowedDistrict = true;\n        break;\n      }\n    }\n    if (!isAllowedDistrict && districtName) continue;\n    \n    const photos = [];\n    if (offer.photos && Array.isArray(offer.photos)) {\n      for (const p of offer.photos) {\n        if (p.link) photos.push(p.link.replace('{width}', '800').replace('{height}', '600'));\n      }\n    }\n    \n    const location = districtName ? ('Варшава, ' + districtName) : 'Варшава';\n    const olxUrl = offer.url || '';\n    \n    let title = [rooms, area].filter(Boolean).join(', ') || offer.title || 'Квартира';\n    \n    let msg = '✨ ' + title + '\\n';\n    if (priceStr) msg += '💰 Орендна плата - ' + priceStr + ' ' + currency + '\\n';\n    msg += '\\n📍 ' + location + '\\n\\n';\n    if (floor) msg += '🏢 Поверх: ' + floor + '\\n';\n    if (deposit) msg += '💰 Кауція: ' + deposit + '\\n';\n    if (rent) msg += '📋 Чинш: ' + rent + '\\n';\n    msg += '\\n📱 Перегляд можливий також онлайн.\\nДля огляду пишіть: @stayX_pl';\n    msg += '\\n\\n— — — — — — —\\n🤖 Не підходить цей район чи ціна? Налаштуйте персональний пошук у нашому боті: @stayx_apartments_bot';\n    \n    results.push({\n      json: {\n        id: String(offer.id || ''),\n        message: msg,\n        messageWithUrl: msg + '\\n\\n🔗 ' + olxUrl,\n        photos: JSON.stringify(photos),\n        url: olxUrl,\n        addedAt: $now.setZone('Europe/Warsaw').toFormat('yyyy-MM-dd HH:mm'),\n        status: 'pending'\n      }\n    });\n  } catch (err) {\n    continue;\n  }\n}\n\nconsole.log(`📊 Знайдено квартир: ${results.length}`);\nreturn results.length > 0 ? results : [{ json: { skip: true } }];"
+      },
+      "id": "9833137d-2394-4dad-8b74-0953e61c8f40",
+      "name": "Parse & Filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "has-id",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e2653ed1-fcb8-4d27-9f11-e63552890695",
+      "name": "Has Data",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -880,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1LzTUkWc4pmvH-7E7xP52uOwxdZR_JOgQ93lhBQo_LQE",
+          "mode": "list",
+          "cachedResultName": "OLX Buffer"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Лист1"
+        },
+        "options": {}
+      },
+      "id": "ebac5bfa-709a-4731-b5e5-388ef8240429",
+      "name": "Check Existing",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -656,
+        112
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Ahn7ExgJ3tsW3gub",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const newItems = $('Parse & Filter').all();\nconst existingItems = $('Check Existing').all();\n\nconst existingIds = new Set();\nfor (const item of existingItems) {\n  if (item.json.id) existingIds.add(String(item.json.id));\n}\n\nconst toAdd = [];\nfor (const item of newItems) {\n  if (item.json.id && !existingIds.has(String(item.json.id))) {\n    toAdd.push(item);\n  }\n}\n\nconsole.log(`📊 Існуючих в таблиці: ${existingIds.size}`);\nconsole.log(`📥 Нових для додавання: ${toAdd.length}`);\n\nreturn toAdd.length > 0 ? toAdd : [{ json: { skip: true } }];"
+      },
+      "id": "69fda040-3a4f-4320-88ec-2d27db1c8857",
+      "name": "Filter New Only",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "has-id-2",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "73abf2a7-797e-4802-8200-7c1cb626b096",
+      "name": "Has New Items",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -224,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1LzTUkWc4pmvH-7E7xP52uOwxdZR_JOgQ93lhBQo_LQE",
+          "mode": "list",
+          "cachedResultName": "OLX Buffer"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Лист1"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "messageWithUrl",
+              "displayName": "messageWithUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "photos",
+              "displayName": "photos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "addedAt",
+              "displayName": "addedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ok",
+              "displayName": "ok",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "result",
+              "displayName": "result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "981cfafb-1af0-49a9-b291-b1a17fb0ec95",
+      "name": "Add to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Ahn7ExgJ3tsW3gub",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1LzTUkWc4pmvH-7E7xP52uOwxdZR_JOgQ93lhBQo_LQE",
+          "mode": "list",
+          "cachedResultName": "OLX Buffer"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Лист1"
+        },
+        "options": {}
+      },
+      "id": "12fadc50-8401-455e-937b-870f3e812b05",
+      "name": "Read Pending",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -1328,
+        576
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Ahn7ExgJ3tsW3gub",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst allPending = items.filter(item => item.json.status === 'pending');\n\nif (allPending.length === 0) {\n  return [];\n}\n\nconst results = allPending.map(item => {\n  let photos = [];\n  try {\n    photos = JSON.parse(item.json.photos || '[]');\n  } catch(e) {\n    photos = [];\n  }\n  return {\n    json: {\n      ...item.json,\n      photos: photos,\n      rowNumber: item.json.row_number || item.json['row_number']\n    }\n  };\n});\n\nreturn results;"
+      },
+      "id": "5b766f79-20ba-4f77-b2a9-9f8ad6080e12",
+      "name": "Filter Pending",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "529ab66e-cbdb-4e1d-b4d7-221645263d3b",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [
+        -880,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst BOT_URL = 'https://api.telegram.org/bot8233865335:AAGcpS4RWAwOSglZ84KgbDi2uCS8Enkv8Dw';\nconst MAIN = '-1002046661958';\nconst ADMIN = '-1003864439857';\n\nconst photos = (item.photos || []).slice(0, 10);\nconst msg = item.message || '';\nconst msgUrl = item.messageWithUrl || '';\n\nasync function requestWithRetry(options) {\n  let attempt = 0;\n  while (attempt < 3) {\n    try {\n      return await this.helpers.httpRequest(options);\n    } catch (e) {\n      if (e.message && e.message.includes('429')) {\n        attempt++;\n        let waitTime = 10000;\n        if (e.response && e.response.data && e.response.data.parameters && e.response.data.parameters.retry_after) {\n          waitTime = e.response.data.parameters.retry_after * 1000;\n        }\n        await new Promise(r => setTimeout(r, waitTime));\n      } else {\n        throw e;\n      }\n    }\n  }\n}\n\ntry {\n  if (photos.length > 1) {\n    const media = photos.map((url, idx) => {\n      const o = { type: 'photo', media: url };\n      if (idx === 0 && msg) o.caption = msg.substring(0, 1024);\n      return o;\n    });\n    const mediaUrl = photos.map((url, idx) => {\n      const o = { type: 'photo', media: url };\n      if (idx === 0 && msgUrl) o.caption = msgUrl.substring(0, 1024);\n      return o;\n    });\n\n    await requestWithRetry.call(this, {\n      method: 'POST',\n      url: BOT_URL + '/sendMediaGroup',\n      body: { chat_id: MAIN, media: media },\n      json: true\n    });\n\n    await new Promise(r => setTimeout(r, 1000));\n\n    await requestWithRetry.call(this, {\n      method: 'POST',\n      url: BOT_URL + '/sendMediaGroup',\n      body: { chat_id: ADMIN, media: mediaUrl },\n      json: true\n    });\n  } else if (photos.length === 1) {\n    await requestWithRetry.call(this, {\n      method: 'POST',\n      url: BOT_URL + '/sendPhoto',\n      body: { chat_id: MAIN, photo: photos[0], caption: msg.substring(0, 1024) },\n      json: true\n    });\n\n    await new Promise(r => setTimeout(r, 1000));\n\n    await requestWithRetry.call(this, {\n      method: 'POST',\n      url: BOT_URL + '/sendPhoto',\n      body: { chat_id: ADMIN, photo: photos[0], caption: msgUrl.substring(0, 1024) },\n      json: true\n    });\n  } else {\n    await requestWithRetry.call(this, {\n      method: 'POST',\n      url: BOT_URL + '/sendMessage',\n      body: { chat_id: MAIN, text: msg },\n      json: true\n    });\n\n    await new Promise(r => setTimeout(r, 1000));\n\n    await requestWithRetry.call(this, {\n      method: 'POST',\n      url: BOT_URL + '/sendMessage',\n      body: { chat_id: ADMIN, text: msgUrl },\n      json: true\n    });\n  }\n\n  item.status = 'sent';\n  return { json: item };\n} catch (err) {\n  item.status = 'error';\n  item.error = err.message + ' - ' + JSON.stringify(err.response?.data || {});\n  try {\n    const errorMsg = '❌ Помилка квартири: ' + (item.url || item.id) + '\\n\\nПричина:\\n' + String(item.error).substring(0, 1000);\n    await this.helpers.httpRequest({ method: 'POST', url: BOT_URL + '/sendMessage', body: { chat_id: ADMIN, text: errorMsg }, json: true });\n  } catch(e) {}\n  return { json: item };\n}"
+      },
+      "id": "f7d147b6-a205-40fb-b64c-41694528f62c",
+      "name": "Send One Action",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -656,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1LzTUkWc4pmvH-7E7xP52uOwxdZR_JOgQ93lhBQo_LQE",
+          "mode": "list",
+          "cachedResultName": "OLX Buffer"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Лист1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.id }}",
+            "status": "={{ $json.status }}",
+            "row_number": 0
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "messageWithUrl",
+              "displayName": "messageWithUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "photos",
+              "displayName": "photos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "addedAt",
+              "displayName": "addedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ok",
+              "displayName": "ok",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "result",
+              "displayName": "result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "3d65959b-4ed3-4e27-a567-833c2f11112c",
+      "name": "Mark as Sent",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -448,
+        576
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Ahn7ExgJ3tsW3gub",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 20
+      },
+      "id": "18a256f9-e776-45f0-994f-c59ed275007b",
+      "name": "Wait 20s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -224,
+        576
+      ],
+      "webhookId": "1b13bfae-8f33-4864-9151-ea43bbd6b6b1"
+    },
+    {
+      "parameters": {
+        "url": "http://api.scraperapi.com/",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "de95da163e4c1c6e15fae36c235324fa"
+            },
+            {
+              "name": "url",
+              "value": "https://www.olx.pl/api/v1/offers/?offset=0&limit=40&category_id=15&city_id=17871&sort_by=created_at:desc"
+            },
+            {
+              "name": "keep_headers",
+              "value": "true"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9ce7af94-806a-47a6-92b1-bff00e1b7a82",
+      "name": "OLX API Warsaw",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1328,
+        176
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule (збір кожні 2 год)": {
+      "main": [
+        [
+          {
+            "node": "OLX API Warsaw",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule (відправка 9:00 і 20:00)": {
+      "main": [
+        [
+          {
+            "node": "Read Pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Test (збір)": {
+      "main": [
+        [
+          {
+            "node": "OLX API Warsaw",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Filter": {
+      "main": [
+        [
+          {
+            "node": "Has Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Data": {
+      "main": [
+        [
+          {
+            "node": "Check Existing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Existing": {
+      "main": [
+        [
+          {
+            "node": "Filter New Only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter New Only": {
+      "main": [
+        [
+          {
+            "node": "Has New Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has New Items": {
+      "main": [
+        [
+          {
+            "node": "Add to Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Pending": {
+      "main": [
+        [
+          {
+            "node": "Filter Pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Pending": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Send One Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send One Action": {
+      "main": [
+        [
+          {
+            "node": "Mark as Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark as Sent": {
+      "main": [
+        [
+          {
+            "node": "Wait 20s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 20s": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OLX API Warsaw": {
+      "main": [
+        [
+          {
+            "node": "Parse & Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1155e189d008736c92adc62394f44b1cce35c0b3c34c76002402e5cb4854073a"
+  }
+}
