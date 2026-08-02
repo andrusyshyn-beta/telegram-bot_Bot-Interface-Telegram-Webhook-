@@ -26,7 +26,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json;\nlet chatId = '';\nlet text = '';\nlet callbackData = '';\nlet isCallback = false;\nlet messageId = null;\n\nif (data.message) {\n  chatId = String(data.message.chat.id);\n  text = data.message.text || '';\n} else if (data.callback_query) {\n  isCallback = true;\n  chatId = String(data.callback_query.message.chat.id);\n  messageId = data.callback_query.message.message_id;\n  callbackData = data.callback_query.data;\n}\n\nreturn { json: { chatId, text, callbackData, isCallback, messageId } };"
+        "jsCode": "const data = $input.first().json;\nlet chatId = '';\nlet text = '';\nlet callbackData = '';\nlet isCallback = false;\nlet messageId = null;\nlet callbackQueryId = null;\nlet originalMsgText = '';\n\nif (data.message) {\n  chatId = String(data.message.chat.id);\n  text = data.message.text || '';\n} else if (data.callback_query) {\n  isCallback = true;\n  chatId = String(data.callback_query.message.chat.id);\n  messageId = data.callback_query.message.message_id;\n  callbackData = data.callback_query.data;\n  callbackQueryId = data.callback_query.id;\n  originalMsgText = data.callback_query.message.text || '';\n}\n\nreturn { json: { chatId, text, callbackData, isCallback, messageId, callbackQueryId, originalMsgText } };"
       },
       "id": "d8f09574-a274-4708-b06b-e2ccefd07af8",
       "name": "Parse Input",
@@ -81,7 +81,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const inputData = $input.first().json;\nlet action = 'unknown';\nlet userState = '';\nlet userRow = null;\n\nconst users = $items(\"Google Sheets\");\nconst activeUser = users.find(u => u.json['Telegram ID'] === inputData.chatId);\n\nif (activeUser) {\n  userState = activeUser.json['State'] || '';\n  userRow = activeUser.json;\n}\n\nlet rooms = userRow ? (userRow['Rooms'] || '') : '';\n\nif (inputData.text === '/start') {\n  action = 'ask_rooms';\n} else if (inputData.text === '/stop') {\n  action = 'stop_bot';\n} else if (inputData.text === '/menu') {\n  action = 'menu';\n} else if (userState === 'waiting_rooms' && inputData.isCallback) {\n  action = 'ask_district';\n  rooms = inputData.callbackData.replace('rooms_', '').replace('plus', '+');\n} else if (userState === 'waiting_district' && inputData.isCallback) {\n  if (inputData.callbackData === 'confirm_districts' || inputData.callbackData === 'district_any') {\n    action = 'ask_min_area';\n  } else if (inputData.callbackData.startsWith('district_')) {\n    action = 'toggle_district';\n  }\n} else if (userState === 'waiting_min_area' && !inputData.isCallback) {\n  if (!isNaN(inputData.text) && parseInt(inputData.text) >= 10 && parseInt(inputData.text) <= 500) {\n    action = 'ask_max_area';\n  } else {\n    action = 'invalid_area';\n  }\n} else if (userState === 'waiting_max_area' && !inputData.isCallback) {\n  if (!isNaN(inputData.text) && parseInt(inputData.text) >= 10 && parseInt(inputData.text) <= 500) {\n    action = 'ask_price';\n  } else {\n    action = 'invalid_area';\n  }\n} else if (userState === 'waiting_price' && !inputData.isCallback) {\n  if (!isNaN(inputData.text) && parseInt(inputData.text) >= 4000 && parseInt(inputData.text) <= 20000) {\n    action = 'finish';\n  } else {\n    action = 'invalid_price';\n  }\n} else if (inputData.isCallback && inputData.callbackData.startsWith('view_')) {\n  action = 'notify_view';\n} else if (inputData.isCallback && inputData.callbackData.startsWith('ask_')) {\n  action = 'notify_ask';\n} else if (inputData.isCallback && inputData.callbackData.startsWith('hide_')) {\n  action = 'hide_message';\n}\n\nreturn {\n  json: {\n    action: action,\n    chatId: inputData.chatId,\n    text: inputData.text,\n    callbackData: inputData.callbackData,\n    callbackQueryId: inputData.callbackQueryId,\n    messageId: inputData.messageId,\n    userState: userState,\n    rooms: rooms,\n    originalMsgText: inputData.message?.text || inputData.callback_query?.message?.text || \"\"\n  }\n};"
+        "jsCode": "const inputData = $('Parse Input').first().json;\nconst users = $input.all();\nconst chatId = String(inputData.chatId);\n\nlet user = users.find(u => String(u.json['Telegram ID']) === chatId);\nlet state = user ? (user.json.State || 'new') : 'new';\nlet action = 'ignore';\nlet rooms = user ? (user.json.Rooms || '') : '';\n\nif (inputData.text === '/start') {\n  action = 'ask_rooms';\n} else if (inputData.text === '/stop') {\n  action = 'stop_bot';\n} else if (state === 'waiting_rooms' && inputData.isCallback) {\n  action = 'ask_district';\n  rooms = inputData.callbackData.replace('rooms_', '').replace('plus', '+');\n} else if (state === 'waiting_district' && inputData.isCallback) {\n  if (inputData.callbackData === 'confirm_districts' || inputData.callbackData === 'district_any') {\n    action = 'ask_min_area';\n  } else if (inputData.callbackData.startsWith('district_')) {\n    action = 'toggle_district';\n  }\n} else if (state === 'waiting_min_area' && !inputData.isCallback) {\n  if (!isNaN(inputData.text) && parseInt(inputData.text) >= 10 && parseInt(inputData.text) <= 500) {\n    action = 'ask_max_area';\n  } else {\n    action = 'invalid_area';\n  }\n} else if (state === 'waiting_max_area' && !inputData.isCallback) {\n  if (!isNaN(inputData.text) && parseInt(inputData.text) >= 10 && parseInt(inputData.text) <= 500) {\n    action = 'ask_price';\n  } else {\n    action = 'invalid_area';\n  }\n} else if (state === 'waiting_price' && !inputData.isCallback) {\n  if (!isNaN(inputData.text) && parseInt(inputData.text) >= 4000 && parseInt(inputData.text) <= 20000) {\n    action = 'finish';\n  } else {\n    action = 'invalid_price';\n  }\n// НОВІ УМОВИ ДЛЯ КНОПОК:\n} else if (inputData.isCallback && inputData.callbackData.startsWith('view_')) {\n  action = 'notify_view';\n} else if (inputData.isCallback && inputData.callbackData.startsWith('ask_')) {\n  action = 'notify_ask';\n} else if (inputData.isCallback && inputData.callbackData.startsWith('hide_')) {\n  action = 'hide_message';\n}\n\nreturn { \n  json: { \n    chatId: inputData.chatId, \n    state, \n    action, \n    text: inputData.text, \n    callbackData: inputData.callbackData, \n    callbackQueryId: inputData.callbackQueryId, \n    messageId: inputData.messageId, \n    rooms, \n    originalMsgText: inputData.originalMsgText, \n    adminTopicId: user ? user.json['Admin Topic ID'] : \"1958\" \n  } \n};"
       },
       "id": "e30feea7-0dc8-4a1a-af69-f236780c040e",
       "name": "Determine Action",
@@ -267,6 +267,7 @@
                 },
                 "conditions": [
                   {
+                    "id": "b182e401-b292-4fea-b5f4-273b6abf805f",
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "ask_min_area",
                     "operator": {
@@ -289,6 +290,7 @@
                 },
                 "conditions": [
                   {
+                    "id": "42dcb66b-f34b-4bcc-86d3-e653a7f32772",
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "ask_max_area",
                     "operator": {
@@ -311,6 +313,7 @@
                 },
                 "conditions": [
                   {
+                    "id": "dc14346e-b8de-4286-89b2-01585b8cad34",
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "invalid_area",
                     "operator": {
@@ -328,15 +331,18 @@
                 "options": {
                   "caseSensitive": true,
                   "leftValue": "",
-                  "typeValidation": "strict"
+                  "typeValidation": "strict",
+                  "version": 1
                 },
                 "conditions": [
                   {
-                    "leftValue": "={{$json.action}}",
+                    "id": "a1dad044-76e5-4258-864d-a40f2f2c6437",
+                    "leftValue": "={{ $json.action }}",
                     "rightValue": "notify_view",
                     "operator": {
                       "type": "string",
-                      "operation": "equals"
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
                     }
                   }
                 ],
@@ -348,15 +354,18 @@
                 "options": {
                   "caseSensitive": true,
                   "leftValue": "",
-                  "typeValidation": "strict"
+                  "typeValidation": "strict",
+                  "version": 1
                 },
                 "conditions": [
                   {
-                    "leftValue": "={{$json.action}}",
+                    "id": "e07883f6-db58-44f0-87f3-701a04c19ee7",
+                    "leftValue": "={{ $json.action }}",
                     "rightValue": "notify_ask",
                     "operator": {
                       "type": "string",
-                      "operation": "equals"
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
                     }
                   }
                 ],
@@ -368,15 +377,18 @@
                 "options": {
                   "caseSensitive": true,
                   "leftValue": "",
-                  "typeValidation": "strict"
+                  "typeValidation": "strict",
+                  "version": 1
                 },
                 "conditions": [
                   {
-                    "leftValue": "={{$json.action}}",
+                    "id": "7d00055e-9a0f-4f8b-9ced-4e0fb7f18b8b",
+                    "leftValue": "={{ $json.action }}",
                     "rightValue": "hide_message",
                     "operator": {
                       "type": "string",
-                      "operation": "equals"
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
                     }
                   }
                 ],
@@ -393,7 +405,7 @@
       "typeVersion": 3,
       "position": [
         -320,
-        464
+        432
       ]
     },
     {
@@ -450,8 +462,8 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        0,
-        0
+        64,
+        -448
       ],
       "webhookId": "4e36c506-c6bf-43e6-9669-1b2ff2d238d7",
       "notesInFlow": false,
@@ -534,16 +546,6 @@
               "display": true,
               "type": "string",
               "canBeUsedToMatch": true
-            },
-            {
-              "id": "Min Area",
-              "type": "string",
-              "display": true
-            },
-            {
-              "id": "Max Area",
-              "type": "string",
-              "display": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -556,8 +558,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        192,
-        0
+        256,
+        -448
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -579,8 +581,8 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        0,
-        400
+        512,
+        32
       ],
       "webhookId": "4848d21d-46b5-44fa-852a-d73e88eab8ac",
       "credentials": {
@@ -635,7 +637,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "Rooms",
@@ -644,7 +647,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "District",
@@ -663,16 +667,38 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
-              "id": "Max Area",
-              "type": "string"
+              "id": "Admin Topic ID",
+              "displayName": "Admin Topic ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "Min Area",
+              "displayName": "Min Area",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
               "type": "string",
-              "display": true
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Max Area",
+              "displayName": "Max Area",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
             }
           ],
           "attemptToConvertTypes": false,
@@ -685,8 +711,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        192,
-        400
+        704,
+        32
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -768,16 +794,6 @@
               "display": true,
               "type": "string",
               "canBeUsedToMatch": true
-            },
-            {
-              "id": "Min Area",
-              "type": "string",
-              "display": true
-            },
-            {
-              "id": "Max Area",
-              "type": "string",
-              "display": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -790,8 +806,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        256,
-        608
+        1424,
+        -96
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -813,8 +829,8 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        0,
-        816
+        736,
+        400
       ],
       "webhookId": "6b6255b4-7107-4385-a2e3-134ddab72e16",
       "credentials": {
@@ -860,8 +876,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        944,
-        480
+        1984,
+        -160
       ],
       "id": "83b21603-4d94-4d29-b6d8-2b44aba984c9",
       "name": "Call 'Bot Scraper (Scheduled with Admin BCC)'"
@@ -888,8 +904,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        464,
-        608
+        1488,
+        144
       ],
       "id": "ce0598e1-05c0-4233-ace4-ec3f5848d460",
       "name": "Create Topic"
@@ -975,16 +991,6 @@
               "display": true,
               "type": "string",
               "canBeUsedToMatch": true
-            },
-            {
-              "id": "Min Area",
-              "type": "string",
-              "display": true
-            },
-            {
-              "id": "Max Area",
-              "type": "string",
-              "display": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -995,8 +1001,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        960,
-        704
+        2000,
+        64
       ],
       "id": "7eb9f6ae-4886-4471-a511-2175fd7dc90f",
       "name": "Append or update row in sheet",
@@ -1203,8 +1209,8 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        672,
-        608
+        1712,
+        -32
       ],
       "id": "80089e55-0a9a-4850-bbd1-913954346395",
       "name": "Send a text message",
@@ -1288,8 +1294,8 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        0,
-        624
+        1184,
+        160
       ],
       "id": "d3538609-acac-4def-9922-a9acf5e7a282",
       "name": "Send Finish Success",
@@ -1310,8 +1316,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        16,
-        208
+        608,
+        -272
       ]
     },
     {
@@ -1402,16 +1408,6 @@
               "type": "string",
               "canBeUsedToMatch": true,
               "removed": false
-            },
-            {
-              "id": "Min Area",
-              "type": "string",
-              "display": true
-            },
-            {
-              "id": "Max Area",
-              "type": "string",
-              "display": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -1424,8 +1420,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        496,
-        288
+        1088,
+        -192
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -1466,8 +1462,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        496,
-        96
+        1088,
+        -384
       ]
     },
     {
@@ -1562,16 +1558,6 @@
               "canBeUsedToMatch": true,
               "readOnly": true,
               "removed": true
-            },
-            {
-              "id": "Min Area",
-              "type": "string",
-              "display": true
-            },
-            {
-              "id": "Max Area",
-              "type": "string",
-              "display": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -1582,8 +1568,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        -16,
-        1024
+        992,
+        560
       ],
       "id": "3737d8a5-3063-4ecd-82c1-92e6bf053c5f",
       "name": "Update row in sheet",
@@ -1605,8 +1591,8 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        192,
-        1024
+        1200,
+        560
       ],
       "id": "60b62856-714f-4a51-86ad-4cdee5f955f2",
       "name": "Send a text message2",
@@ -1626,78 +1612,19 @@
           "appendAttribution": false
         }
       },
-      "id": "df167516-5ea5-465f-afb0-000a68698bcf",
-      "name": "Send Min Area Prompt",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        0,
-        1100
+        1024,
+        832
       ],
+      "id": "0389d435-6d9d-4a4c-b201-95cace25f890",
+      "name": "Send a text message3",
+      "webhookId": "a068dde3-de31-4fb3-87ac-bc727892a030",
       "credentials": {
         "telegramApi": {
           "id": "nLBwPBqm4MLzA7d1",
           "name": "Telegram account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "operation": "appendOrUpdate",
-        "documentId": {
-          "__rl": true,
-          "value": "121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s",
-          "mode": "list"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "gid=0",
-          "mode": "list"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "State": "waiting_min_area",
-            "Telegram ID": "={{ $('Determine Action').item.json.chatId }}"
-          },
-          "matchingColumns": [
-            "Telegram ID"
-          ],
-          "schema": [
-            {
-              "id": "Telegram ID",
-              "type": "string"
-            },
-            {
-              "id": "State",
-              "type": "string"
-            },
-            {
-              "id": "Min Area",
-              "type": "string",
-              "display": true
-            },
-            {
-              "id": "Max Area",
-              "type": "string",
-              "display": true
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "7c0d85d2-e85b-4d42-934e-e624836d582e",
-      "name": "Save State Min Area",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.5,
-      "position": [
-        192,
-        1100
-      ],
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "Ahn7ExgJ3tsW3gub",
-          "name": "Google Sheets account"
         }
       }
     },
@@ -1709,14 +1636,15 @@
           "appendAttribution": false
         }
       },
-      "id": "ae4fa21d-4303-4913-a72f-31033fcc55ad",
-      "name": "Send Max Area Prompt",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        0,
-        1300
+        1040,
+        1024
       ],
+      "id": "73e56072-4b12-4d5e-990b-dfb6f7ab5551",
+      "name": "Send a text message4",
+      "webhookId": "dfa91b0d-117e-4f86-860b-361933b6c83d",
       "credentials": {
         "telegramApi": {
           "id": "nLBwPBqm4MLzA7d1",
@@ -1726,22 +1654,140 @@
     },
     {
       "parameters": {
-        "operation": "appendOrUpdate",
+        "operation": "update",
         "documentId": {
           "__rl": true,
           "value": "121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s",
-          "mode": "list"
+          "mode": "list",
+          "cachedResultName": "Бот пошуковик",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s/edit?usp=drivesdk"
         },
         "sheetName": {
           "__rl": true,
           "value": "gid=0",
-          "mode": "list"
+          "mode": "list",
+          "cachedResultName": "Users",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s/edit#gid=0"
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "State": "waiting_max_area",
             "Telegram ID": "={{ $('Determine Action').item.json.chatId }}",
+            "State": "waiting_min_area"
+          },
+          "matchingColumns": [
+            "Telegram ID"
+          ],
+          "schema": [
+            {
+              "id": "Telegram ID",
+              "displayName": "Telegram ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "State",
+              "displayName": "State",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Rooms",
+              "displayName": "Rooms",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "District",
+              "displayName": "District",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Max Price",
+              "displayName": "Max Price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Admin Topic ID",
+              "displayName": "Admin Topic ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1248,
+        832
+      ],
+      "id": "074f3561-cc3e-4912-95cc-2ebfba171fb3",
+      "name": "Update row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Ahn7ExgJ3tsW3gub",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s",
+          "mode": "list",
+          "cachedResultName": "Бот пошуковик",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Users",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Telegram ID": "={{ $('Determine Action').item.json.chatId }}",
+            "State": "waiting_max_area",
             "Min Area": "={{ $('Determine Action').item.json.text }}"
           },
           "matchingColumns": [
@@ -1750,33 +1796,109 @@
           "schema": [
             {
               "id": "Telegram ID",
-              "type": "string"
+              "displayName": "Telegram ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "State",
-              "type": "string"
+              "displayName": "State",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Rooms",
+              "displayName": "Rooms",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "District",
+              "displayName": "District",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Max Price",
+              "displayName": "Max Price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Admin Topic ID",
+              "displayName": "Admin Topic ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "Min Area",
-              "type": "string"
+              "displayName": "Min Area",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "Max Area",
+              "displayName": "Max Area",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
               "type": "string",
-              "display": true
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
             }
-          ]
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
         },
         "options": {}
       },
-      "id": "fb5495cf-89c4-4398-ac6b-4b079b90d278",
-      "name": "Save State Max Area",
       "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.5,
+      "typeVersion": 4.7,
       "position": [
-        192,
-        1300
+        1248,
+        1024
       ],
+      "id": "af5dcb1c-5107-4a0b-8383-f9e089231bbd",
+      "name": "Update row in sheet2",
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "Ahn7ExgJ3tsW3gub",
@@ -1787,19 +1909,20 @@
     {
       "parameters": {
         "chatId": "={{ $('Determine Action').item.json.chatId }}",
-        "text": "❌ Площа має бути числом (наприклад, 40). Спробуйте ще раз:",
+        "text": "❌ Площа має бути числом (від 10 до 500). Спробуйте ще раз:",
         "additionalFields": {
           "appendAttribution": false
         }
       },
-      "id": "87d86400-6dab-40c6-a4cb-d4a1480337b7",
-      "name": "Send Invalid Area",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        0,
-        1500
+        336,
+        960
       ],
+      "id": "fba48d55-6825-483a-805e-9eb27e7762e3",
+      "name": "Send a text message5",
+      "webhookId": "bfb91810-5bc7-4888-a0af-d8955322c741",
       "credentials": {
         "telegramApi": {
           "id": "nLBwPBqm4MLzA7d1",
@@ -1812,20 +1935,20 @@
         "operation": "editMessageText",
         "chatId": "={{$json.chatId}}",
         "messageId": "={{$json.messageId}}",
-        "text": "={{$json.originalMsgText}}\\n\\n✅ *Запит на огляд відправлено менеджерам!*",
-        "replyMarkup": "none",
+        "text": "={{$json.originalMsgText}}\n\n✅ *Запит на огляд відправлено менеджерам!*",
         "additionalFields": {
           "parse_mode": "Markdown"
         }
       },
-      "id": "1d00bd9c-70a0-453e-83e5-b94670b7e3ba",
+      "id": "74dd6af8-4b4f-4d47-acaa-388c662c1bdd",
       "name": "Notify View - Edit Msg",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1200,
-        1500
+        496,
+        1216
       ],
+      "webhookId": "7fcd9771-8da7-4eec-8f68-4d3cbb6640c2",
       "credentials": {
         "telegramApi": {
           "id": "nLBwPBqm4MLzA7d1",
@@ -1835,22 +1958,23 @@
     },
     {
       "parameters": {
-        "chatId": "-1002206774618",
-        "text": "={{ '🚨 *Клієнт хоче оглянути квартиру!*\\n\\nID OLX: ' + $('Determine Action').item.json.callbackData.replace('view_', '') + '\\n\\n' + ($('Telegram Trigger').item.json.callback_query.message.text || $('Telegram Trigger').item.json.callback_query.message.caption || '') + '\\n\\n[Профіль клієнта](tg://user?id=' + $('Determine Action').item.json.chatId + ')' }}",
+        "chatId": "-1004341021033",
+        "text": "={{ '🚨 *Клієнт хоче оглянути квартиру!*\\n\\nID OLX: ' + $('Determine Action').item.json.callbackData.replace('view_', '') + '\\n\\n' + ($('Telegram Trigger').item.json.callback_query.message.text || $('Telegram Trigger').item.json.callback_query.message.caption || '') + '\\n\\n[' + 'Профіль клієнта' + ']' + '(' + 'tg://user?id=' + $('Determine Action').item.json.chatId + ')' }}",
         "additionalFields": {
+          "appendAttribution": false,
           "parse_mode": "Markdown",
-          "message_thread_id": "={{ $items(\"Google Sheets\").find(u => u.json['Telegram ID'] === $json.chatId)?.json['Admin Topic ID'] || \"1958\" }}",
-          "appendAttribution": false
+          "message_thread_id": "={{ $('Read User State').item.json['Admin Topic ID'] || \"1958\" }}"
         }
       },
-      "id": "0561d31d-a2bb-45ba-8653-22ab1988d6e2",
+      "id": "feffb486-c200-42ec-8c1f-2c948077aa5d",
       "name": "Notify View - Admin Msg",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1400,
-        1500
+        768,
+        1264
       ],
+      "webhookId": "fafd791c-9ffc-48e7-9c61-b5bea3cb0689",
       "credentials": {
         "telegramApi": {
           "id": "nLBwPBqm4MLzA7d1",
@@ -1860,21 +1984,22 @@
     },
     {
       "parameters": {
-        "operation": "answerCallbackQuery",
-        "queryId": "={{$json.callbackQueryId}}",
+        "resource": "callback",
+        "queryId": "={{ $json.callbackQueryId }}",
         "additionalFields": {
-          "showAlert": true,
+          "show_alert": true,
           "text": "Просто напишіть ваше запитання прямо сюди в чат, і ми на нього відповімо!"
         }
       },
-      "id": "5ddf4ee0-a7f5-44ae-a398-9b8f5e4befde",
+      "id": "0799a7bc-7312-4b47-8a92-504a9b8a0906",
       "name": "Notify Ask",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1200,
-        1700
+        128,
+        1344
       ],
+      "webhookId": "c1fa4486-d5ee-4be5-a076-b9674e7fa49f",
       "credentials": {
         "telegramApi": {
           "id": "nLBwPBqm4MLzA7d1",
@@ -1888,17 +2013,17 @@
         "chatId": "={{$json.chatId}}",
         "messageId": "={{$json.messageId}}",
         "text": "❌ Відхилено.",
-        "replyMarkup": "none",
         "additionalFields": {}
       },
-      "id": "702c1c39-e5bc-49be-9287-cab5d649b556",
+      "id": "b619ea83-f4f6-46df-9407-06c2768957de",
       "name": "Hide Message",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1200,
-        1900
+        -96,
+        1424
       ],
+      "webhookId": "725e5531-d003-4a3b-a166-ea0b385d92b1",
       "credentials": {
         "telegramApi": {
           "id": "nLBwPBqm4MLzA7d1",
@@ -2010,21 +2135,21 @@
         ],
         [
           {
-            "node": "Send Min Area Prompt",
+            "node": "Send a text message3",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Send Max Area Prompt",
+            "node": "Send a text message4",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Send Invalid Area",
+            "node": "Send a text message5",
             "type": "main",
             "index": 0
           }
@@ -2236,22 +2361,22 @@
         ]
       ]
     },
-    "Send Min Area Prompt": {
+    "Send a text message3": {
       "main": [
         [
           {
-            "node": "Save State Min Area",
+            "node": "Update row in sheet1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Send Max Area Prompt": {
+    "Send a text message4": {
       "main": [
         [
           {
-            "node": "Save State Max Area",
+            "node": "Update row in sheet2",
             "type": "main",
             "index": 0
           }
