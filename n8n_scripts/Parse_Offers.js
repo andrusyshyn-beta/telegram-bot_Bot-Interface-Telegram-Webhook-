@@ -12,7 +12,8 @@ for (const user of users) {
   
   for (const offer of allOffers) {
     if (offer.url && offer.url.includes('otodom')) continue;
-    if (offer.partner && offer.partner.code === 'otodom') continue;
+    if (offer.external_url && offer.external_url.includes('otodom')) continue;
+    if (offer.partner && offer.partner.code && offer.partner.code.includes('otodom')) continue;
 
     if (sentIds.includes(offer.id)) continue;
 

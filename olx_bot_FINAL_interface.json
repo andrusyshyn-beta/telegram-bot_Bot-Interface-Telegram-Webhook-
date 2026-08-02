@@ -1836,7 +1836,7 @@
     {
       "parameters": {
         "chatId": "-1002206774618",
-        "text": "={{'🚨 *Клієнт хоче оглянути квартиру!*\\n\\nID OLX: ' + $json.callbackData.replace('view_', '') + '\\n\\n[Профіль клієнта](tg://user?id=' + $json.chatId + ')'}}",
+        "text": "={{ '🚨 *Клієнт хоче оглянути квартиру!*\\n\\nID OLX: ' + $('Determine Action').item.json.callbackData.replace('view_', '') + '\\n\\n' + ($('Telegram Trigger').item.json.callback_query.message.text || $('Telegram Trigger').item.json.callback_query.message.caption || '') + '\\n\\n[Профіль клієнта](tg://user?id=' + $('Determine Action').item.json.chatId + ')' }}",
         "additionalFields": {
           "parse_mode": "Markdown",
           "message_thread_id": "={{ $items(\"Google Sheets\").find(u => u.json['Telegram ID'] === $json.chatId)?.json['Admin Topic ID'] || \"1958\" }}",
