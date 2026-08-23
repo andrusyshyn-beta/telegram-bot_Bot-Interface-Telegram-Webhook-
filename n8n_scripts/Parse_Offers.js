@@ -4,8 +4,24 @@ const activeUsers = $('Filter Active').all();
 const sentItems = $('Read Sent Items').all();
 
 for (let i = 0; i < allInputs.length; i++) {
-  const user = activeUsers[i].json;
-  const offers = allInputs[i].json.data || [];
+  const inputItem = allInputs[i];
+  
+  // ПАРНЕ ЗВ'ЯЗУВАННЯ (pairedItem) — ГАРАНТІЯ ТОГО, ЩО КОРИСТУВАЧІ НЕ ПЕРЕПУТАЮТЬСЯ ПРИ ПАРАЛЕЛЬНОМУ ЗАПУСКУ!
+  let user = null;
+  if (inputItem.pairedItem && inputItem.pairedItem.item !== undefined) {
+    const pairedIndex = inputItem.pairedItem.item;
+    if (activeUsers[pairedIndex]) {
+      user = activeUsers[pairedIndex].json;
+    }
+  }
+  
+  if (!user) {
+    user = activeUsers[i] ? activeUsers[i].json : null;
+  }
+  
+  if (!user || !user['Telegram ID']) continue;
+
+  const offers = inputItem.json.data || [];
   
   const userDistrictStr = user.District || 'any';
   const userDistricts = userDistrictStr === 'district_any' || userDistrictStr === 'any' 
@@ -14,12 +30,12 @@ for (let i = 0; i < allInputs.length; i++) {
 
   for (const offer of offers) {
     // БРОНЯ ВІД ДУБЛІКАТІВ
-    const alreadySent = sentItems.find(i => String(i.json['Item ID']) === String(offer.id) && String(i.json['Telegram ID']) === String(user['Telegram ID']));
+    const alreadySent = sentItems.find(si => String(si.json['Item ID']) === String(offer.id) && String(si.json['Telegram ID']) === String(user['Telegram ID']));
     const alreadyInQueue = results.find(r => String(r.json['Item ID']) === String(offer.id) && String(r.json['Telegram ID']) === String(user['Telegram ID']));
     
     if (alreadySent || alreadyInQueue) continue;
 
-    // ВАША ОРИГІНАЛЬНА ПОТУЖНА ЛОГІКА ФІЛЬТРАЦІЇ
+    // ФІЛЬТРАЦІЯ OTODOM І БІЗНЕСУ
     if (offer.url && offer.url.includes('otodom')) continue;
     if (offer.external_url && offer.external_url.includes('otodom')) continue;
     if (offer.partner && offer.partner.code && offer.partner.code.includes('otodom')) continue;
