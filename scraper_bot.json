@@ -594,7 +594,7 @@
     {
       "parameters": {
         "compare": "selectedFields",
-        "fieldsToCompare": "Item ID, Telegram ID",
+        "fieldsToCompare": "id, chatId",
         "options": {}
       },
       "type": "n8n-nodes-base.removeDuplicates",
