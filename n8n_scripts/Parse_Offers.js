@@ -6,19 +6,39 @@ const sentItems = $('Read Sent Items').all();
 for (let i = 0; i < allInputs.length; i++) {
   const inputItem = allInputs[i];
   
-  // ПАРНЕ ЗВ'ЯЗУВАННЯ (pairedItem) — ГАРАНТІЯ ТОГО, ЩО КОРИСТУВАЧІ НЕ ПЕРЕПУТАЮТЬСЯ ПРИ ПАРАЛЕЛЬНОМУ ЗАПУСКУ!
+  // 1. НАЙНАДІЙНІШИЙ СПОСІБ: Витягуємо tg_id прямо з URL запиту OLX!
   let user = null;
-  if (inputItem.pairedItem && inputItem.pairedItem.item !== undefined) {
-    const pairedIndex = inputItem.pairedItem.item;
-    if (activeUsers[pairedIndex]) {
-      user = activeUsers[pairedIndex].json;
+  let tgIdFromUrl = null;
+  
+  try {
+    const reqUrl = inputItem.json.url || (inputItem.json.metadata ? inputItem.json.metadata.url : '') || '';
+    const match = reqUrl.match(/tg_id=(\d+)/);
+    if (match && match[1]) {
+      tgIdFromUrl = match[1];
+    }
+  } catch (e) {}
+
+  if (tgIdFromUrl) {
+    const matchedUser = activeUsers.find(u => String(u.json['Telegram ID']) === String(tgIdFromUrl));
+    if (matchedUser) {
+      user = matchedUser.json;
     }
   }
-  
+
+  // 2. Якщо tg_id не знайдено в URL, використовуємо pairedItem або покроковий індекс
+  if (!user) {
+    if (inputItem.pairedItem) {
+      const pairedIndex = Array.isArray(inputItem.pairedItem) ? inputItem.pairedItem[0]?.item : inputItem.pairedItem.item;
+      if (pairedIndex !== undefined && activeUsers[pairedIndex]) {
+        user = activeUsers[pairedIndex].json;
+      }
+    }
+  }
+
   if (!user) {
     user = activeUsers[i] ? activeUsers[i].json : null;
   }
-  
+
   if (!user || !user['Telegram ID']) continue;
 
   const offers = inputItem.json.data || [];

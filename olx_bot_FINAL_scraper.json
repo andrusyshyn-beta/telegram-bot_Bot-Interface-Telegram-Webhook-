@@ -235,7 +235,7 @@
             },
             {
               "name": "url",
-              "value": "={{ 'https://www.olx.pl/api/v1/offers/?offset=0&limit=40&category_id=15&city_id=17871&sort_by=created_at:desc&filter_float_price:from=2000&filter_float_price:to=' + $json[\"Max Price\"] + '&filter_enum_rooms[0]=' + ($json.Rooms == 1 ? 'one' : ($json.Rooms == 2 ? 'two' : ($json.Rooms == 3 ? 'three' : 'four'))) }}"
+              "value": "={{ 'https://www.olx.pl/api/v1/offers/?offset=0&limit=40&category_id=15&city_id=17871&sort_by=created_at:desc&filter_float_price:from=2000&filter_float_price:to=' + $json[\"Max Price\"] + '&filter_enum_rooms[0]=' + ($json.Rooms == 1 ? 'one' : ($json.Rooms == 2 ? 'two' : ($json.Rooms == 3 ? 'three' : 'four'))) + '&tg_id=' + $json[\"Telegram ID\"] }}"
             },
             {
               "name": "keep_headers",
