@@ -6,7 +6,7 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "5 9-21 * * *"
+              "expression": "0 10,14,18,19 * * *"
             }
           ]
         }
@@ -22,7 +22,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const sentItems = $('Read Sent Items1').all();\nconst users = $('Read Active Users1').all();\n\nconst pendingItems = sentItems.filter(i => i.json.Status === 'Pending');\nif (pendingItems.length === 0) return [];\n\nconst uniqueUsersMap = new Map();\nfor (const u of users) {\n  const tid = String(u.json['Telegram ID']);\n  if (tid && tid !== 'undefined') {\n    uniqueUsersMap.set(tid, u);\n  }\n}\n\nconst itemsToSend = [];\n\nfor (const [telegramId, user] of uniqueUsersMap.entries()) {\n  const userPending = pendingItems.filter(i => String(i.json['Telegram ID']) === telegramId);\n  \n  // Беремо до 5 накопичених квартир для цього користувача за один запуск\n  const batch = userPending.slice(0, 5);\n  \n  for (const item of batch) {\n    try {\n      const payloadData = JSON.parse(item.json.Payload);\n      payloadData.row_number = item.json.row_number;\n      payloadData.id = item.json['Item ID'] || payloadData.id;\n      \n      itemsToSend.push({\n        json: payloadData\n      });\n    } catch (e) {\n      // ignore\n    }\n  }\n}\n\nreturn itemsToSend;"
+        "jsCode": "const sentItems = $('Read Sent Items1').all();\nconst users = $('Read Active Users1').all();\n\nconst pendingItems = sentItems.filter(i => i.json.Status === 'Pending');\nif (pendingItems.length === 0) return [];\n\nconst uniqueUsersMap = new Map();\nfor (const u of users) {\n  const tid = String(u.json['Telegram ID']);\n  if (tid && tid !== 'undefined') {\n    uniqueUsersMap.set(tid, u);\n  }\n}\n\nconst itemsToSend = [];\n\nfor (const [telegramId, user] of uniqueUsersMap.entries()) {\n  const userPending = pendingItems.filter(i => String(i.json['Telegram ID']) === telegramId);\n  \n  // Беремо накопичені квартири для цього користувача за цей запуск (до 5 шт)\n  const batch = userPending.slice(0, 5);\n  \n  for (const item of batch) {\n    try {\n      const payloadData = JSON.parse(item.json.Payload);\n      payloadData.row_number = item.json.row_number;\n      payloadData.id = item.json['Item ID'] || payloadData.id;\n      \n      itemsToSend.push({\n        json: payloadData\n      });\n    } catch (e) {\n      // ignore\n    }\n  }\n}\n\nreturn itemsToSend;"
       },
       "id": "49f8aeba-495c-435d-af0e-d8eed4c0781a",
       "name": "Filter Pending by Schedule",
