@@ -323,7 +323,7 @@
                   {
                     "text": "❓ Задати питання",
                     "additionalFields": {
-                      "callback_data": "=ask_{{ $('Loop Over Items1').item.json.id }}"
+                      "url": "https://t.me/stayX_pl"
                     }
                   }
                 ]
