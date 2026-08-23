@@ -1,0 +1,672 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "5 9-21 * * *"
+            }
+          ]
+        }
+      },
+      "id": "50e213a5-3ff2-4c66-8506-cccc28c69c39",
+      "name": "Schedule Sender",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        416,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const sentItems = $('Read Sent Items1').all();\nconst users = $('Read Active Users1').all();\n\nconst pendingItems = sentItems.filter(i => i.json.Status === 'Pending');\nif (pendingItems.length === 0) return [];\n\nconst uniqueUsersMap = new Map();\nfor (const u of users) {\n  const tid = String(u.json['Telegram ID']);\n  if (tid && tid !== 'undefined') {\n    uniqueUsersMap.set(tid, u);\n  }\n}\n\nconst itemsToSend = [];\n\nfor (const [telegramId, user] of uniqueUsersMap.entries()) {\n  const userPending = pendingItems.filter(i => String(i.json['Telegram ID']) === telegramId);\n  \n  // Беремо до 5 накопичених квартир для цього користувача за один запуск\n  const batch = userPending.slice(0, 5);\n  \n  for (const item of batch) {\n    try {\n      const payloadData = JSON.parse(item.json.Payload);\n      payloadData.row_number = item.json.row_number;\n      payloadData.id = item.json['Item ID'] || payloadData.id;\n      \n      itemsToSend.push({\n        json: payloadData\n      });\n    } catch (e) {\n      // ignore\n    }\n  }\n}\n\nreturn itemsToSend;"
+      },
+      "id": "49f8aeba-495c-435d-af0e-d8eed4c0781a",
+      "name": "Filter Pending by Schedule",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1088,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s",
+          "mode": "list",
+          "cachedResultName": "Бот пошуковик",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Users"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Last Sent Time": "={{ new Date().toISOString() }}",
+            "row_number": 0,
+            "Telegram ID": "={{ $('Loop Over Items1').item.json.chatId }}"
+          },
+          "matchingColumns": [
+            "Telegram ID"
+          ],
+          "schema": [
+            {
+              "id": "Telegram ID",
+              "displayName": "Telegram ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "State",
+              "displayName": "State",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Rooms",
+              "displayName": "Rooms",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "District",
+              "displayName": "District",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Max Price",
+              "displayName": "Max Price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Vetting Answers",
+              "displayName": "Vetting Answers",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Admin Topic ID",
+              "displayName": "Admin Topic ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Min Area",
+              "displayName": "Min Area",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Max Area",
+              "displayName": "Max Area",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Last Sent Time",
+              "displayName": "Last Sent Time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "0e1c43fd-abba-40f6-a67b-e43d4671c1c1",
+      "name": "Update Last Sent Time",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2448,
+        -64
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qE8hzDQx360BSiti",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s",
+          "mode": "list",
+          "cachedResultName": "Бот пошуковик",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1465269977,
+          "mode": "list",
+          "cachedResultName": "Sent Items",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s/edit#gid=1465269977"
+        },
+        "filtersUI": {
+          "values": []
+        },
+        "options": {}
+      },
+      "id": "9da87db1-97af-4614-beea-5b2741dc2920",
+      "name": "Read Sent Items1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        608,
+        -112
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qE8hzDQx360BSiti",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s",
+          "mode": "list",
+          "cachedResultName": "Бот пошуковик",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Users",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "16755589-ad78-4122-9fbd-c087fe078018",
+      "name": "Read Active Users1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        816,
+        -112
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qE8hzDQx360BSiti",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "da4dca39-b1eb-4226-8308-cc56bc5af01c",
+      "name": "Loop Over Items1",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1296,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot8852143788:AAG09wIZbW6IXnu5uc7-upAQ2G4etSWNdgY/sendMediaGroup",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('Loop Over Items1').item.json.chatId }}"
+            },
+            {
+              "name": "media",
+              "value": "={{ $('Loop Over Items1').item.json.userMedia }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1e5e1fd9-2928-48b3-acc5-3be62226da27",
+      "name": "Send Media to User1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1472,
+        -80
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Loop Over Items1').item.json.chatId }}",
+        "text": "={{ $('Loop Over Items1').item.json.userMsg }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "👀 Хочу оглянути",
+                    "additionalFields": {
+                      "callback_data": "=view_{{ $('Loop Over Items1').item.json.id }}"
+                    }
+                  },
+                  {
+                    "text": "❓ Задати питання",
+                    "additionalFields": {
+                      "callback_data": "=ask_{{ $('Loop Over Items1').item.json.id }}"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "👎 Не підходить",
+                    "additionalFields": {
+                      "callback_data": "=hide_{{ $('Loop Over Items1').item.json.id }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "f4effea4-03f9-4204-b8b5-4202df5f1fa4",
+      "name": "Send Text to User1",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1664,
+        -64
+      ],
+      "webhookId": "a269d96f-6b0b-458a-be98-3d63f974a371",
+      "retryOnFail": true,
+      "credentials": {
+        "telegramApi": {
+          "id": "5Rc8vBxg6RUpAAl4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot8852143788:AAG09wIZbW6IXnu5uc7-upAQ2G4etSWNdgY/sendMediaGroup",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "-1004341021033"
+            },
+            {
+              "name": "media",
+              "value": "={{ $('Loop Over Items1').item.json.userMedia }}"
+            },
+            {
+              "name": "message_thread_id",
+              "value": "={{ $('Loop Over Items1').item.json.adminTopicId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2acf8e13-fa55-4e1e-ad60-e851f309f589",
+      "name": "Send Media to Admin1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1856,
+        -64
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "chatId": "-1004341021033",
+        "text": "={{ $('Loop Over Items1').item.json.adminMsg }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "message_thread_id": "={{ $('Loop Over Items1').item.json.adminTopicId }}"
+        }
+      },
+      "id": "8d8543c1-699c-4d8d-bb85-25dec620a488",
+      "name": "Send Text to Admin1",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2064,
+        -64
+      ],
+      "webhookId": "baec67e4-d42f-45a1-b75e-fedf3cc15044",
+      "retryOnFail": true,
+      "credentials": {
+        "telegramApi": {
+          "id": "5Rc8vBxg6RUpAAl4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "id": "cae74ed3-9a0a-47ef-8d57-533f7b6c5a1b",
+      "name": "Wait1",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2672,
+        -32
+      ],
+      "webhookId": "e89adc93-ffa2-4727-b7bc-3453c8861e89"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        416,
+        96
+      ],
+      "id": "e601e693-5fa1-4389-8ca2-94521788a0dc",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s",
+          "mode": "list",
+          "cachedResultName": "Бот пошуковик",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1465269977,
+          "mode": "list",
+          "cachedResultName": "Sent Items"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Item ID": "={{ $('Loop Over Items1').item.json['Item ID'] || $('Loop Over Items1').item.json.id }}",
+            "Status": "Sent"
+          },
+          "matchingColumns": [
+            "Item ID"
+          ],
+          "schema": [
+            {
+              "id": "Item ID",
+              "displayName": "Item ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "id": "8214d650-bf84-4894-aae6-a5c8f0a1cb0b",
+      "name": "Mark as Sent1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2256,
+        -80
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qE8hzDQx360BSiti",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Sender": {
+      "main": [
+        [
+          {
+            "node": "Read Sent Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Pending by Schedule": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Last Sent Time": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Sent Items1": {
+      "main": [
+        [
+          {
+            "node": "Read Active Users1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Active Users1": {
+      "main": [
+        [
+          {
+            "node": "Filter Pending by Schedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send Media to User1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Media to User1": {
+      "main": [
+        [
+          {
+            "node": "Send Text to User1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Text to User1": {
+      "main": [
+        [
+          {
+            "node": "Send Media to Admin1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Media to Admin1": {
+      "main": [
+        [
+          {
+            "node": "Send Text to Admin1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Text to Admin1": {
+      "main": [
+        [
+          {
+            "node": "Mark as Sent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Read Sent Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark as Sent1": {
+      "main": [
+        [
+          {
+            "node": "Update Last Sent Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f28ad53bdbbfc09b7d6cb72e98819d9eb3651448ec899ca1d33c6c476e08cbe4"
+  }
+}
