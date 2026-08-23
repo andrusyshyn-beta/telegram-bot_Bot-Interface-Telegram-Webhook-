@@ -11,13 +11,13 @@
           ]
         }
       },
-      "id": "41ea0af9-93b9-4a65-8fc3-7a1828a611f2",
+      "id": "b4c892b3-b6f4-4619-b5d1-7d9fe01098de",
       "name": "Schedule",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        -3376,
-        880
+        -736,
+        -112
       ]
     },
     {
@@ -38,200 +38,46 @@
         },
         "options": {}
       },
-      "id": "cabd07a3-60dc-448d-870b-c6902fc39a8f",
+      "id": "2ae7c638-6108-4f7d-86e8-cd618f788f61",
       "name": "Read Active Users",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        -3104,
-        1088
-      ],
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "iWg4OpewolnX3jra",
-          "name": "Google Sheets account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "return $input.all().filter(item => item.json.State === 'active');"
-      },
-      "id": "14add868-3732-4d7c-9ef2-947f115a8b8b",
-      "name": "Filter Active",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -2848,
-        912
-      ]
-    },
-    {
-      "parameters": {
-        "url": "https://www.olx.pl/api/v1/offers/",
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {
-              "name": "offset",
-              "value": "0"
-            },
-            {
-              "name": "limit",
-              "value": "40"
-            },
-            {
-              "name": "category_id",
-              "value": "15"
-            },
-            {
-              "name": "city_id",
-              "value": "17871"
-            },
-            {
-              "name": "sort_by",
-              "value": "created_at:desc"
-            },
-            {
-              "name": "filter_float_price:from",
-              "value": "4000"
-            },
-            {
-              "name": "filter_float_price:to",
-              "value": "={{ $json[\"Max Price\"] }}"
-            },
-            {
-              "name": "filter_enum_rooms[0]",
-              "value": "={{ $json.Rooms == 1 ? 'one' : ($json.Rooms == 2 ? 'two' : ($json.Rooms == 3 ? 'three' : 'four')) }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "721b7794-3d09-4aaa-83db-91b995fdf552",
-      "name": "OLX API",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        -2496,
-        832
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "const results = [];\nconst allInputs = $input.all();\nconst activeUsers = $items(\"Filter Active\");\n\nfor (let i = 0; i < allInputs.length; i++) {\n  const response = allInputs[i].json;\n  const offers = response.data || [];\n  \n  const user = activeUsers[i].json;\n  const userDistrict = user.District || 'any';\n\n  for (const offer of offers) {\n    const distName = (offer.location?.district?.name || '').toLowerCase();\n    if (userDistrict !== 'any' && !distName.includes(userDistrict.toLowerCase())) continue;\n    \n    let area = '', floor = '', rent = '', deposit = '', priceStr = '';\n    \n    for (const p of offer.params || []) {\n      if (p.key === 'm') area = p.value?.label;\n      if (p.key === 'floor_select') floor = p.value?.label;\n      if (p.key === 'rent') rent = p.value?.label;\n      if (p.key === 'deposit') deposit = p.value?.label;\n      if (p.key === 'price') priceStr = p.value?.value;\n    }\n    \n    let hasOtodomPhotos = false;\n    const photos = [];\n    \n    if (offer.photos && Array.isArray(offer.photos)) {\n      for (const p of offer.photos) {\n        const photoUrl = (p.link || '').toLowerCase();\n        if (photoUrl.includes('otodom') || photoUrl.includes('uicdn') || photoUrl.includes('rfrcdn')) {\n          hasOtodomPhotos = true;\n          break; \n        }\n        photos.push({ type: 'photo', media: p.link.replace('{width}', '800').replace('{height}', '600') });\n      }\n    }\n    \n    if (hasOtodomPhotos || photos.length === 0) continue;\n    \n    let userMsg = `✨ ${user.Rooms} кімнат(и), ${area}\\n`;\n    if (priceStr) userMsg += `💰 Орендна плата - ${priceStr} PLN\\n`;\n    userMsg += `\\n📍 Варшава, ${offer.location?.district?.name || ''}\\n\\n`;\n    if (floor) userMsg += `🏢 Поверх: ${floor}\\n`;\n    if (deposit) userMsg += `💰 Кауція: ${deposit}\\n`;\n    if (rent) userMsg += `📋 Чинш: ${rent}\\n`;\n    userMsg += `\\n💬 Щоб дізнатися деталі, просто дайте відповідь на це повідомлення!`;\n    \n    let adminMsg = `[КОПІЯ] Клієнт ID: ${user['Telegram ID']}\\n${userMsg}\\n\\n🔗 ${offer.url}`;\n    \n    const userPhotos = JSON.parse(JSON.stringify(photos.slice(0, 10)));\n    userPhotos[0].caption = userMsg.substring(0, 1024);\n    \n    const adminPhotos = JSON.parse(JSON.stringify(photos.slice(0, 10)));\n    adminPhotos[0].caption = adminMsg.substring(0, 1024);\n    \n    results.push({\n      json: {\n        id: offer.id,\n        userMedia: JSON.stringify(userPhotos),\n        adminMedia: JSON.stringify(adminPhotos),\n        chatId: user['Telegram ID'],\n        adminTopicId: user['Admin Topic ID'] // <--- ОСЬ ТУТ ДОДАВСЯ НОМЕР КІМНАТИ!\n      }\n    });\n  }\n}\n\nreturn results;"
-      },
-      "id": "f38538c4-e831-4b5a-9727-ef9ae8e3257f",
-      "name": "Parse Offers",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -2112,
-        832
-      ]
-    },
-    {
-      "parameters": {
-        "documentId": {
-          "__rl": true,
-          "value": "121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s",
-          "mode": "list",
-          "cachedResultName": "Бот пошуковик",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s/edit?usp=drivesdk"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": 1465269977,
-          "mode": "list",
-          "cachedResultName": "Sent Items",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s/edit#gid=1465269977"
-        },
-        "options": {}
-      },
-      "id": "a35d2d2b-8838-4b1d-a3ba-eba2239eca53",
-      "name": "Read Sent Items",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.5,
-      "position": [
-        -3104,
-        864
+        -464,
+        96
       ],
       "alwaysOutputData": true,
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "iWg4OpewolnX3jra",
+          "id": "qE8hzDQx360BSiti",
           "name": "Google Sheets account"
         }
       }
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.telegram.org/bot8852143788:AAG09wIZbW6IXnu5uc7-upAQ2G4etSWNdgY/sendMediaGroup",
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "chat_id",
-              "value": "={{ $json.chatId }}"
-            },
-            {
-              "name": "media",
-              "value": "={{ $json.userMedia }}"
-            }
-          ]
-        },
-        "options": {
-          "batching": {
-            "batch": {}
-          },
-          "response": {
-            "response": {
-              "responseFormat": "text",
-              "outputPropertyName": "response_data"
-            }
-          }
-        }
+        "jsCode": "return $input.all().filter(item => item.json.State === 'active' || item.json.State === 'first_run');"
       },
-      "id": "9c089703-1642-4967-9f1e-a49bb77a5e64",
-      "name": "Send to User",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "id": "b3f47fd0-ae86-4d98-ba4e-49cf91691028",
+      "name": "Filter Active",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        -1488,
-        912
+        -208,
+        -80
       ]
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.telegram.org/bot8852143788:AAG09wIZbW6IXnu5uc7-upAQ2G4etSWNdgY/sendMediaGroup",
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "chat_id",
-              "value": "-1004341021033"
-            },
-            {
-              "name": "media",
-              "value": "={{ $('Loop Over Items').item.json.adminMedia }}"
-            },
-            {
-              "name": "message_thread_id",
-              "value": "={{ $('Loop Over Items').item.json.adminTopicId }}"
-            }
-          ]
-        },
-        "options": {}
+        "jsCode": "const results = [];\nconst allInputs = $input.all();\nconst activeUsers = $('Filter Active').all();\nconst sentItems = $('Read Sent Items').all();\n\nfor (let i = 0; i < allInputs.length; i++) {\n  const user = activeUsers[i].json;\n  const offers = allInputs[i].json.data || [];\n  \n  const userDistrictStr = user.District || 'any';\n  const userDistricts = userDistrictStr === 'district_any' || userDistrictStr === 'any' \n    ? [] \n    : userDistrictStr.split(',').map(d => d.trim().toLowerCase()).filter(d => d);\n\n  for (const offer of offers) {\n    // БРОНЯ ВІД ДУБЛІКАТІВ (тільки це додано мною)\n    const alreadySent = sentItems.find(i => String(i.json['Item ID']) === String(offer.id) && String(i.json['Telegram ID']) === String(user['Telegram ID']));\n    const alreadyInQueue = results.find(r => String(r.json['Item ID']) === String(offer.id) && String(r.json['Telegram ID']) === String(user['Telegram ID']));\n    \n    if (alreadySent || alreadyInQueue) continue;\n\n    // ВАША ОРИГІНАЛЬНА ПОТУЖНА ЛОГІКА\n    if (offer.url && offer.url.includes('otodom')) continue;\n    if (offer.external_url && offer.external_url.includes('otodom')) continue;\n    if (offer.partner && offer.partner.code && offer.partner.code.includes('otodom')) continue;\n\n    const isBusinessUser = offer.user && (offer.user.business || offer.user.is_business || offer.user.company_name);\n    if (isBusinessUser) continue;\n\n    const distName = (offer.location?.district?.name || '').toLowerCase();\n    \n    if (userDistricts.length > 0) {\n      const isMatch = userDistricts.some(d => distName.includes(d));\n      if (!isMatch) continue;\n    }\n    \n    let area = '', floor = '', rent = '', deposit = '', priceStr = '';\n    let parsedPrice = 0, parsedRent = 0;\n    let isAgencyParam = false;\n    \n    for (const p of offer.params || []) {\n      if (p.key === 'm') area = p.value?.label;\n      if (p.key === 'floor_select') floor = p.value?.label;\n      if (p.key === 'deposit') deposit = p.value?.label;\n      \n      if (p.key === 'private_business') {\n        const val = p.value || {};\n        if (val.key === 'business' || String(val.label).includes('Firm') || String(val.label).includes('Biuro')) {\n          isAgencyParam = true;\n        }\n      }\n      \n      if (p.key === 'rent') {\n        rent = p.value?.label;\n        if (p.value?.key) {\n          parsedRent = parseFloat(String(p.value.key).replace(/\\s/g, '').replace(',', '.'));\n        } else if (p.value?.label) {\n          parsedRent = parseFloat(p.value.label.replace(/\\s|zł|zl/gi, '').replace(',', '.'));\n        }\n        if (isNaN(parsedRent)) parsedRent = 0;\n      }\n      \n      if (p.key === 'price') {\n        priceStr = p.value?.label || p.value?.value;\n        if (p.value?.value) {\n          parsedPrice = parseFloat(p.value.value);\n        } else if (p.value?.label) {\n          parsedPrice = parseFloat(p.value.label.replace(/\\s|zł|zl/gi, '').replace(',', '.'));\n        }\n        if (isNaN(parsedPrice)) parsedPrice = 0;\n      }\n    }\n    \n    if (isAgencyParam) continue;\n    \n    if (area) {\n       let parsedArea = parseFloat(String(area).replace(/[^0-9,.]/g, '').replace(',', '.'));\n       if (!isNaN(parsedArea)) {\n         if (user['Min Area']) {\n           const minArea = parseFloat(user['Min Area']);\n           if (!isNaN(minArea) && parsedArea < minArea) continue;\n         }\n         if (user['Max Area']) {\n           const maxArea = parseFloat(user['Max Area']);\n           if (!isNaN(maxArea) && parsedArea > maxArea) continue;\n         }\n       }\n    }\n    \n    const totalCost = parsedPrice + parsedRent;\n    \n    if (user['Max Price']) {\n      const maxBudget = parseFloat(user['Max Price']);\n      if (!isNaN(maxBudget)) {\n        let minBudget = 4000;\n        if (maxBudget > 6000) minBudget = maxBudget - 1500;\n        if (totalCost < minBudget || totalCost > maxBudget) continue; \n      } else {\n        if (totalCost < 4000) continue;\n      }\n    } else {\n      if (totalCost < 4000) continue;\n    }\n    \n    let hasOtodomPhotos = false;\n    const photos = [];\n    if (offer.photos && Array.isArray(offer.photos)) {\n      for (const p of offer.photos) {\n        const photoUrl = (p.link || '').toLowerCase();\n        if (photoUrl.includes('otodom') || photoUrl.includes('uicdn') || photoUrl.includes('rfrcdn')) {\n          hasOtodomPhotos = true;\n          break; \n        }\n        photos.push({ type: 'photo', media: p.link.replace('{width}', '800').replace('{height}', '600') });\n      }\n    }\n    \n    if (hasOtodomPhotos || photos.length === 0) continue;\n    \n    // ВАШ ОРИГІНАЛЬНИЙ ІДЕАЛЬНИЙ ТЕКСТ\n    let userMsg = `🚪 ${user.Rooms || '?'} pokoje, ${area}\\n`;\n    if (priceStr) userMsg += `💰 Ціна оренди - ${priceStr}\\n`;\n    userMsg += `\\n📍 Варшава, ${offer.location?.district?.name || ''}\\n\\n`;\n    if (floor) userMsg += `🏢 Поверх : ${floor}\\n`;\n    if (deposit) userMsg += `💵 Кауція: ${deposit}\\n`;\n    if (rent) userMsg += `🧾 Чинш: ${rent}\\n`;\n    \n    let adminMsg = `[СИСТЕМА] Відправлено ID: ${user['Telegram ID']}\\n${userMsg}\\n\\n🔗 ${offer.url}`;\n    \n    // ПРАВИЛЬНЕ ПАКУВАННЯ\n    const payloadObj = {\n        id: offer.id,\n        userMedia: JSON.stringify(photos.slice(0, 10)),\n        adminMedia: JSON.stringify(photos.slice(0, 10)),\n        userMsg: userMsg,\n        adminMsg: adminMsg,\n        chatId: user['Telegram ID'],\n        adminTopicId: user['Admin Topic ID']\n    };\n\n    results.push({\n      json: {\n        'Telegram ID': user['Telegram ID'],\n        'Item ID': offer.id,\n        'Status': 'Pending',\n        'message_type': 'apartment',\n        'chatId': user['Telegram ID'], \n        'id': offer.id, \n        'Payload': JSON.stringify(payloadObj)\n      }\n    });\n  }\n}\n\nreturn results;"
       },
-      "id": "2b98a61e-b834-441b-a9f7-598d0880e94f",
-      "name": "Send to Admin",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "id": "e3a47c38-649c-4543-89ee-71f5abd91ddb",
+      "name": "Parse Offers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        -1280,
-        912
+        176,
+        -80
       ]
     },
     {
@@ -254,8 +100,10 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "Telegram ID": "={{ $('Loop Over Items').item.json.chatId }}",
-            "Item ID": "={{ $('Loop Over Items').item.json.id }}"
+            "Telegram ID": "={{ $json['Telegram ID'] }}",
+            "Item ID": "={{ $json['Item ID'] }}",
+            "Status": "Pending",
+            "Payload": "={{ $json[\"Payload\"] }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -276,6 +124,24 @@
               "display": true,
               "type": "string",
               "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Payload",
+              "displayName": "Payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
             }
           ],
           "attemptToConvertTypes": false,
@@ -283,17 +149,17 @@
         },
         "options": {}
       },
-      "id": "441c9ac9-1733-4988-89be-58aaa7af3f2e",
+      "id": "1988dbd2-7a43-4724-957c-60d21438982e",
       "name": "Append to Sent Items",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        -1104,
-        912
+        1056,
+        -128
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "iWg4OpewolnX3jra",
+          "id": "qE8hzDQx360BSiti",
           "name": "Google Sheets account"
         }
       }
@@ -311,10 +177,10 @@
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.2,
       "position": [
-        -3376,
-        1056
+        -736,
+        64
       ],
-      "id": "50e1ec3e-95e5-46ca-99d1-f7ab1aaf4b54",
+      "id": "4b411f4c-f593-4b40-a5ea-916bd850028b",
       "name": "When Executed by Another Workflow"
     },
     {
@@ -324,10 +190,10 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        -1168,
-        1168
+        1184,
+        320
       ],
-      "id": "840f5eff-6bbf-4ac4-b687-300a42641d44",
+      "id": "c7b46b1b-b186-469a-873b-5095d6625220",
       "name": "Wait",
       "webhookId": "8a95964b-00a1-49a2-b002-044074fc616a"
     },
@@ -338,24 +204,407 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -1792,
-        816
+        496,
+        -96
       ],
-      "id": "be57f7e0-eb62-4618-965b-aaff40c13a87",
+      "id": "2cb5db3c-d43c-44e7-a7f1-6c87926e5eb2",
       "name": "Loop Over Items"
     },
     {
       "parameters": {
-        "jsCode": "// Отримуємо всі записи з таблиці\nconst sentItems = $('Read Sent Items').all();\n\n// Створюємо список вже відправлених квартир для цього клієнта\nconst sentSet = new Set();\nfor (const sent of sentItems) {\n  if (sent.json['Telegram ID'] && sent.json['Item ID']) {\n    sentSet.add(String(sent.json['Telegram ID']) + '_' + String(sent.json['Item ID']));\n  }\n}\n\n// Фільтруємо нові квартири\nconst newItems = [];\nfor (const item of $input.all()) {\n  const telegramId = String(item.json.chatId); \n  const itemId = String(item.json.id);\n  const key = telegramId + '_' + itemId;\n  \n  // Якщо такої квартири ще не було у цього клієнта - пропускаємо далі\n  if (!sentSet.has(key)) {\n    newItems.push(item);\n  }\n}\n\nreturn newItems;"
+        "jsCode": "// Отримуємо всі записи з таблиці\nconst sentItems = $('Read Sent Items').all();\n\n// Створюємо список вже знайдених квартир (і відправлених, і pending)\nconst sentSet = new Set();\nfor (const sent of sentItems) {\n  if (sent.json['Telegram ID'] && sent.json['Item ID']) {\n    sentSet.add(String(sent.json['Telegram ID']) + '_' + String(sent.json['Item ID']));\n  }\n}\n\nconst newItems = [];\nconst usersWhoGotItems = new Set();\n\nfor (const item of $input.all()) {\n  const telegramId = String(item.json.chatId); \n  const itemId = String(item.json.id);\n  const key = telegramId + '_' + itemId;\n  \n  if (!sentSet.has(key)) {\n    // Зберігаємо весь JSON об'єкт як строку, щоб Sender міг його прочитати\n    item.json.message_type = 'apartment';\n    item.json.payload = JSON.stringify(item.json);\n    newItems.push(item);\n    usersWhoGotItems.add(telegramId);\n  }\n}\n\nconst activeUsers = $items(\"Filter Active\");\nfor (const u of activeUsers) {\n  const user = u.json;\n  if (user.State === 'first_run') {\n    const telegramId = String(user['Telegram ID']);\n    if (!usersWhoGotItems.has(telegramId)) {\n      newItems.push({\n        json: {\n          message_type: 'empty_notification',\n          chatId: telegramId,\n          adminTopicId: user['Admin Topic ID'],\n          payload: ''\n        }\n      });\n    }\n    newItems.push({\n      json: {\n        message_type: 'upgrade_state',\n        chatId: telegramId,\n        payload: ''\n      }\n    });\n  }\n}\n\nreturn newItems;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2112,
-        1120
+        176,
+        208
       ],
-      "id": "886f2df2-c022-4ed7-8feb-e340f97bccf5",
+      "id": "e3bf7fee-735d-4965-b7b0-85a8b27a129c",
       "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "url": "http://api.scraperapi.com/",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "ff526f3f8252756906886f567742b0d9"
+            },
+            {
+              "name": "url",
+              "value": "={{ 'https://www.olx.pl/api/v1/offers/?offset=0&limit=40&category_id=15&city_id=17871&sort_by=created_at:desc&filter_float_price:from=2000&filter_float_price:to=' + $json[\"Max Price\"] + '&filter_enum_rooms[0]=' + ($json.Rooms == 1 ? 'one' : ($json.Rooms == 2 ? 'two' : ($json.Rooms == 3 ? 'three' : 'four'))) }}"
+            },
+            {
+              "name": "keep_headers",
+              "value": "true"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 1500
+            }
+          }
+        }
+      },
+      "id": "7b25e809-2662-4d01-974d-39c3d02b57ae",
+      "name": "OLX API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -16,
+        -80
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "c1",
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "apartment",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Apartment"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "c2",
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "empty_notification",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Empty"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "c3",
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "upgrade_state",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": 3
+        }
+      },
+      "id": "50ef66b2-000b-4b2e-9ad6-188255f17b25",
+      "name": "Switch Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        528,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s",
+          "mode": "list",
+          "cachedResultName": "Бот пошуковик",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Users"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "State": "active",
+            "row_number": 0,
+            "Telegram ID": "={{ $json.chatId }}"
+          },
+          "matchingColumns": [
+            "Telegram ID"
+          ],
+          "schema": [
+            {
+              "id": "Telegram ID",
+              "displayName": "Telegram ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "State",
+              "displayName": "State",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Rooms",
+              "displayName": "Rooms",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "District",
+              "displayName": "District",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Max Price",
+              "displayName": "Max Price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Vetting Answers",
+              "displayName": "Vetting Answers",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Admin Topic ID",
+              "displayName": "Admin Topic ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Min Area",
+              "displayName": "Min Area",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Max Area",
+              "displayName": "Max Area",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Last Sent Time",
+              "displayName": "Last Sent Time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "7dc89a62-14c7-47e3-af99-f8b65fad24cd",
+      "name": "Upgrade State to Active",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        912,
+        240
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qE8hzDQx360BSiti",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "vLXW2G0RmWrdrg9h",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/vLXW2G0RmWrdrg9h",
+          "cachedResultName": "Bot Sender (Scheduled)"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1456,
+        -128
+      ],
+      "id": "86a5b158-15f5-4f8c-b6ec-db060243cc7f",
+      "name": "Call 'Bot Sender (Scheduled)'"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s",
+          "mode": "list",
+          "cachedResultName": "Бот пошуковик",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1465269977,
+          "mode": "list",
+          "cachedResultName": "Sent Items",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/121bG4-zWb7SsQ9NN9bS2CziSkjgBfMGvZkAdW1GHi-s/edit#gid=1465269977"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -464,
+        -112
+      ],
+      "id": "9048d997-270e-4aa9-978b-4eaba7942a2a",
+      "name": "Read Sent Items",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qE8hzDQx360BSiti",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "compare": "selectedFields",
+        "fieldsToCompare": "Item ID, Telegram ID",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        768,
+        -224
+      ],
+      "id": "5e50653f-c2ab-4e9d-8693-43ad9a7361b0",
+      "name": "Remove Duplicates"
     }
   ],
   "connections": {
@@ -392,17 +641,6 @@
         ]
       ]
     },
-    "OLX API": {
-      "main": [
-        [
-          {
-            "node": "Parse Offers",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Parse Offers": {
       "main": [
         [
@@ -414,44 +652,11 @@
         ]
       ]
     },
-    "Read Sent Items": {
-      "main": [
-        [
-          {
-            "node": "Read Active Users",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Send to User": {
-      "main": [
-        [
-          {
-            "node": "Send to Admin",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Send to Admin": {
-      "main": [
-        [
-          {
-            "node": "Append to Sent Items",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Append to Sent Items": {
       "main": [
         [
           {
-            "node": "Wait",
+            "node": "Call 'Bot Sender (Scheduled)'",
             "type": "main",
             "index": 0
           }
@@ -482,10 +687,16 @@
     },
     "Loop Over Items": {
       "main": [
-        [],
         [
           {
-            "node": "Send to User",
+            "node": "Remove Duplicates",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch Type",
             "type": "main",
             "index": 0
           }
@@ -502,11 +713,74 @@
           }
         ]
       ]
+    },
+    "OLX API": {
+      "main": [
+        [
+          {
+            "node": "Parse Offers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Type": {
+      "main": [
+        [
+          {
+            "node": "Append to Sent Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [],
+        [
+          {
+            "node": "Upgrade State to Active",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Bot Sender (Scheduled)'": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Sent Items": {
+      "main": [
+        [
+          {
+            "node": "Read Active Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Duplicates": {
+      "main": [
+        [
+          {
+            "node": "Append to Sent Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "pinData": {},
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "6008c08b2f6046b36ea9f133328be24247b64899aa3efb539215f805803e547f"
+    "instanceId": "f28ad53bdbbfc09b7d6cb72e98819d9eb3651448ec899ca1d33c6c476e08cbe4"
   }
 }
