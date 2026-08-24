@@ -594,6 +594,30 @@
     },
     {
       "parameters": {
+        "chatId": "={{ $('Determine Action').item.json.chatId }}",
+        "text": "Бюджет збережено! 📝 Останнє запитання: вкажіть, будь ласка, які документи ви маєте для оренди (песель, договір праці, карта побуту) та хто буде проживати (скільки осіб, чи є діти/тварини)?",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "a9848f21-7683-49fb-811c-99f82635fe33",
+      "name": "Send Vetting Prompt",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        864,
+        32
+      ],
+      "webhookId": "9a8f467b-1234-4567-89ab-cdef01234567",
+      "credentials": {
+        "telegramApi": {
+          "id": "nLBwPBqm4MLzA7d1",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
         "operation": "appendOrUpdate",
         "documentId": {
           "__rl": true,
@@ -2193,6 +2217,17 @@
         [
           {
             "node": "Save State Price",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save State Price": {
+      "main": [
+        [
+          {
+            "node": "Send Vetting Prompt",
             "type": "main",
             "index": 0
           }
