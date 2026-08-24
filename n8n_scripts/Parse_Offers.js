@@ -6,7 +6,7 @@ const sentItems = $('Read Sent Items').all();
 for (let i = 0; i < allInputs.length; i++) {
   const inputItem = allInputs[i];
   
-  // 1. НАЙНАДІЙНІШИЙ СПОСІБ: Витягуємо tg_id прямо з URL запиту OLX!
+  // 1. ВИЗНАЧАЄМО КОРИСТУВАЧА ЗА TG_ID З URL
   let user = null;
   let tgIdFromUrl = null;
   
@@ -25,7 +25,6 @@ for (let i = 0; i < allInputs.length; i++) {
     }
   }
 
-  // 2. Якщо tg_id не знайдено в URL, використовуємо pairedItem або покроковий індекс
   if (!user) {
     if (inputItem.pairedItem) {
       const pairedIndex = Array.isArray(inputItem.pairedItem) ? inputItem.pairedItem[0]?.item : inputItem.pairedItem.item;
@@ -42,11 +41,15 @@ for (let i = 0; i < allInputs.length; i++) {
   if (!user || !user['Telegram ID']) continue;
 
   const offers = inputItem.json.data || [];
+  const userState = user.State || 'active';
+  const isFirstRunPhase = (userState === 'first_run_1' || userState === 'first_run_2' || userState === 'first_run');
   
   const userDistrictStr = user.District || 'any';
   const userDistricts = userDistrictStr === 'district_any' || userDistrictStr === 'any' 
     ? [] 
     : userDistrictStr.split(',').map(d => d.trim().toLowerCase()).filter(d => d);
+
+  let hasNewOffersForFirstRun = false;
 
   for (const offer of offers) {
     // БРОНЯ ВІД ДУБЛІКАТІВ
@@ -172,6 +175,8 @@ for (let i = 0; i < allInputs.length; i++) {
         adminTopicId: user['Admin Topic ID']
     };
 
+    hasNewOffersForFirstRun = true;
+
     results.push({
       json: {
         'Telegram ID': user['Telegram ID'],
@@ -183,6 +188,37 @@ for (let i = 0; i < allInputs.length; i++) {
         'Payload': JSON.stringify(payloadObj)
       }
     });
+  }
+
+  // ЯКЩО ЦЕ НОВИЙ КОРИСТУВАЧ (first_run / first_run_1 / first_run_2) -> КЕРУВАННЯ СТАНАМИ ТА ТРИГЕРОМ ВІДПРАВНИКА
+  if (isFirstRunPhase) {
+    let nextState = 'active';
+    if (userState === 'first_run_1' || userState === 'first_run') {
+      nextState = 'first_run_2'; // Після першого знаходження стан переходить у 2-й етап (на наступну годину)
+    } else if (userState === 'first_run_2') {
+      nextState = 'active'; // Через годину після 2-го знаходження переводимо в звичайний розклад активного
+    }
+
+    // 1. Оновлення стану в таблиці Users
+    results.push({
+      json: {
+        message_type: 'upgrade_state',
+        chatId: user['Telegram ID'],
+        nextState: nextState,
+        payload: ''
+      }
+    });
+
+    // 2. Якщо були знайдені нові квартири для новенького -> МИТТЄВИЙ ВИКЛИК ВІДПРАВНИКА
+    if (hasNewOffersForFirstRun) {
+      results.push({
+        json: {
+          message_type: 'trigger_sender',
+          chatId: user['Telegram ID'],
+          payload: ''
+        }
+      });
+    }
   }
 }
 

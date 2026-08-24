@@ -389,7 +389,7 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "State": "active",
+            "State": "={{ $json.nextState || 'active' }}",
             "row_number": 0,
             "Telegram ID": "={{ $json.chatId }}"
           },
@@ -735,11 +735,7 @@
             "type": "main",
             "index": 0
           }
-        ]
-      ]
-    },
-    "Upgrade State to Active": {
-      "main": [
+        ],
         [
           {
             "node": "Call 'Bot Sender (Scheduled)'",
@@ -747,6 +743,11 @@
             "index": 0
           }
         ]
+      ]
+    },
+    "Upgrade State to Active": {
+      "main": [
+        []
       ]
     },
     "Call 'Bot Sender (Scheduled)'": {
