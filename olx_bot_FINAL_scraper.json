@@ -654,13 +654,7 @@
     },
     "Append to Sent Items": {
       "main": [
-        [
-          {
-            "node": "Call 'Bot Sender (Scheduled)'",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "When Executed by Another Workflow": {
