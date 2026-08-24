@@ -612,9 +612,8 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "State": "waiting_price",
+            "State": "waiting_vetting",
             "Telegram ID": "={{ $('Determine Action').item.json.chatId }}",
-            "Max Area": "={{ $('Determine Action').item.json.text }}",
             "Max Price": "={{ $('Determine Action').item.json.text }}"
           },
           "matchingColumns": [
