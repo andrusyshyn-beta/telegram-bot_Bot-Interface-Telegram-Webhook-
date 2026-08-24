@@ -743,8 +743,8 @@
           "mappingMode": "defineBelow",
           "value": {
             "Telegram ID": "={{ $('Determine Action').item.json.chatId }}",
-            "State": "active",
-            "Max Price": "={{ $('Determine Action').item.json.text }}"
+            "State": "first_run_1",
+            "Vetting Answers": "={{ $('Determine Action').item.json.text }}"
           },
           "matchingColumns": [
             "Telegram ID"
