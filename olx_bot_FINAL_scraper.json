@@ -738,6 +738,17 @@
         ]
       ]
     },
+    "Upgrade State to Active": {
+      "main": [
+        [
+          {
+            "node": "Call 'Bot Sender (Scheduled)'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Call 'Bot Sender (Scheduled)'": {
       "main": [
         [
