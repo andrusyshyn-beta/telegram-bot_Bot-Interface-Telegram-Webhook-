@@ -612,9 +612,9 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "State": "waiting_vetting",
+            "State": "waiting_price",
             "Telegram ID": "={{ $('Determine Action').item.json.chatId }}",
-            "Max Price": "={{ $('Determine Action').item.json.text }}"
+            "Max Area": "={{ $('Determine Action').item.json.text }}"
           },
           "matchingColumns": [
             "Telegram ID"
@@ -743,7 +743,7 @@
           "value": {
             "Telegram ID": "={{ $('Determine Action').item.json.chatId }}",
             "State": "first_run_1",
-            "Vetting Answers": "={{ $('Determine Action').item.json.text }}"
+            "Max Price": "={{ $('Determine Action').item.json.text }}"
           },
           "matchingColumns": [
             "Telegram ID"
