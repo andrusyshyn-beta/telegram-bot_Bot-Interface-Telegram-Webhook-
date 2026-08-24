@@ -56,7 +56,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return $input.all().filter(item => item.json.State === 'active' || item.json.State === 'first_run');"
+        "jsCode": "return $input.all().filter(item => {\n  const st = String(item.json.State || '').toLowerCase();\n  return st === 'active' || st.startsWith('first_run');\n});"
       },
       "id": "b3f47fd0-ae86-4d98-ba4e-49cf91691028",
       "name": "Filter Active",
