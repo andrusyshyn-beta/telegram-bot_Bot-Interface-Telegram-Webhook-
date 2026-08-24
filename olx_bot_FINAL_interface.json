@@ -614,7 +614,8 @@
           "value": {
             "State": "waiting_price",
             "Telegram ID": "={{ $('Determine Action').item.json.chatId }}",
-            "Max Area": "={{ $('Determine Action').item.json.text }}"
+            "Max Area": "={{ $('Determine Action').item.json.text }}",
+            "Max Price": "={{ $('Determine Action').item.json.text }}"
           },
           "matchingColumns": [
             "Telegram ID"
@@ -1200,7 +1201,7 @@
     {
       "parameters": {
         "chatId": "-1004341021033",
-        "text": "===<b>🆕 НОВА ЗАЯВКА</b>\n\n👤 <b>Клієнт:</b> <a href=\"tg://user?id={{ $('Telegram Trigger').first().json.message.from.id }}\">{{ $('Telegram Trigger').first().json.message.from.first_name }}</a> {{ $('Telegram Trigger').first().json.message.from.username ? '(@' + $('Telegram Trigger').first().json.message.from.username + ')' : '(без юзернейму)' }}\n🔑 <b>ID:</b> <code>{{ $('Telegram Trigger').first().json.message.from.id }}</code>\n\n<b>📋 Параметри пошуку:</b>\n📍 Локація: {{ $('Read User State').first().json.District || 'Не вказано' }}\n🛏 Кімнати: {{ $('Read User State').first().json.Rooms || 'Не вказано' }}\n💰 Бюджет: {{ $('Telegram Trigger').first().json.message.text }} PLN",
+        "text": "===<b>🆕 НОВА ЗАЯВКА</b>\n\n👤 <b>Клієнт:</b> <a href=\"tg://user?id={{ $('Telegram Trigger').first().json.message.from.id }}\">{{ $('Telegram Trigger').first().json.message.from.first_name }}</a> {{ $('Telegram Trigger').first().json.message.from.username ? '(@' + $('Telegram Trigger').first().json.message.from.username + ')' : '(без юзернейму)' }}\n🔑 <b>ID:</b> <code>{{ $('Telegram Trigger').first().json.message.from.id }}</code>\n\n<b>📋 Параметри пошуку:</b>\n📍 Локація: {{ $('Read User State').first().json.District || 'Не вказано' }}\n🛏 Кімнати: {{ $('Read User State').first().json.Rooms || 'Не вказано' }}\n💰 Бюджет: {{ $('Read User State').first().json['Max Price'] || $('Save State Price').first().json['Max Price'] || 'Не вказано' }} PLN\n\n<b>**Анкета клієнта:**</b>\n{{ $('Determine Action').first().json.text }}",
         "additionalFields": {
           "parse_mode": "HTML",
           "message_thread_id": "={{ $('Create Topic').first().json.result.message_thread_id }}"
