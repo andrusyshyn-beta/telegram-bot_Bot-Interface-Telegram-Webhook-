@@ -200,7 +200,7 @@
                   {
                     "id": "ce8b64ea-e98d-4783-b72f-5c8666b569e2",
                     "leftValue": "={{ $json.action }}",
-                    "rightValue": "finish",
+                    "rightValue": "ask_vetting",
                     "operator": {
                       "type": "string",
                       "operation": "equals",
@@ -385,6 +385,29 @@
                     "id": "7d00055e-9a0f-4f8b-9ced-4e0fb7f18b8b",
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "hide_message",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "e07883f6-db58-44f0-87f3-701a04c19ee8",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "finish",
                     "operator": {
                       "type": "string",
                       "operation": "equals",
@@ -2195,6 +2218,13 @@
         [
           {
             "node": "Hide Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Finish Success",
             "type": "main",
             "index": 0
           }
