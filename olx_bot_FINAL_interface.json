@@ -106,7 +106,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "1bce2fd8-1b87-4b77-8a11-8a615773d173",
+                    "id": "f9p9rf9kb",
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "ask_rooms",
                     "operator": {
@@ -129,7 +129,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "b4da06ed-2a2f-430e-b847-ae3bcce4c88f",
+                    "id": "azgarua95",
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "ask_district",
                     "operator": {
@@ -152,122 +152,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "c5ae1063-35c3-4d69-8d01-27683036dde5",
-                    "leftValue": "={{ $json.action }}",
-                    "rightValue": "toggle_district",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals",
-                      "name": "filter.operator.equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              }
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 1
-                },
-                "conditions": [
-                  {
-                    "id": "1c00b7c7-5b1d-4338-a550-71d0d7b83663",
-                    "leftValue": "={{ $json.action }}",
-                    "rightValue": "ask_price",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals",
-                      "name": "filter.operator.equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              }
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 1
-                },
-                "conditions": [
-                  {
-                    "id": "ce8b64ea-e98d-4783-b72f-5c8666b569e2",
-                    "leftValue": "={{ $json.action }}",
-                    "rightValue": "ask_vetting",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals",
-                      "name": "filter.operator.equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              }
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 1
-                },
-                "conditions": [
-                  {
-                    "id": "4b1aaf04-c2b1-452d-9c8b-a4b0241af42a",
-                    "leftValue": "={{ $json.action }}",
-                    "rightValue": "invalid_price",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals",
-                      "name": "filter.operator.equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              }
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 1
-                },
-                "conditions": [
-                  {
-                    "id": "3744a5ee-1dc6-44cc-8bbb-1d2e10ea478d",
-                    "leftValue": "={{ $json.action }}",
-                    "rightValue": "stop_bot",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals",
-                      "name": "filter.operator.equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              }
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 1
-                },
-                "conditions": [
-                  {
-                    "id": "b182e401-b292-4fea-b5f4-273b6abf805f",
+                    "id": "05696urjv",
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "ask_min_area",
                     "operator": {
@@ -290,7 +175,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "42dcb66b-f34b-4bcc-86d3-e653a7f32772",
+                    "id": "4lb6xdbdm",
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "ask_max_area",
                     "operator": {
@@ -313,7 +198,99 @@
                 },
                 "conditions": [
                   {
-                    "id": "dc14346e-b8de-4286-89b2-01585b8cad34",
+                    "id": "tf0ldrmwk",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "toggle_district",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "08ve5mizy",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "ask_price",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "4v48ric1l",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "ask_vetting",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "pn6bjqq6u",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "finish",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "5cajm9j5s",
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "invalid_area",
                     "operator": {
@@ -336,7 +313,30 @@
                 },
                 "conditions": [
                   {
-                    "id": "a1dad044-76e5-4258-864d-a40f2f2c6437",
+                    "id": "bdppn5zm5",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "invalid_price",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "satqldu2l",
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "notify_view",
                     "operator": {
@@ -359,7 +359,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "e07883f6-db58-44f0-87f3-701a04c19ee7",
+                    "id": "us0agj6b3",
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "notify_ask",
                     "operator": {
@@ -382,32 +382,9 @@
                 },
                 "conditions": [
                   {
-                    "id": "7d00055e-9a0f-4f8b-9ced-4e0fb7f18b8b",
+                    "id": "o9nt7e1ck",
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "hide_message",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals",
-                      "name": "filter.operator.equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              }
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 1
-                },
-                "conditions": [
-                  {
-                    "id": "e07883f6-db58-44f0-87f3-701a04c19ee8",
-                    "leftValue": "={{ $json.action }}",
-                    "rightValue": "finish",
                     "operator": {
                       "type": "string",
                       "operation": "equals",
@@ -659,9 +636,9 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "State": "waiting_price",
             "Telegram ID": "={{ $('Determine Action').item.json.chatId }}",
-            "Max Area": "={{ $('Determine Action').item.json.text }}"
+            "State": "waiting_vetting",
+            "Max Price": "={{ $('Determine Action').item.json.text }}"
           },
           "matchingColumns": [
             "Telegram ID"
@@ -790,7 +767,7 @@
           "value": {
             "Telegram ID": "={{ $('Determine Action').item.json.chatId }}",
             "State": "first_run_1",
-            "Max Price": "={{ $('Determine Action').item.json.text }}"
+            "Vetting Answers": "={{ $('Determine Action').item.json.text }}"
           },
           "matchingColumns": [
             "Telegram ID"
@@ -1720,7 +1697,8 @@
           "mappingMode": "defineBelow",
           "value": {
             "Telegram ID": "={{ $('Determine Action').item.json.chatId }}",
-            "State": "waiting_min_area"
+            "State": "waiting_max_area",
+            "Min Area": "={{ $('Determine Action').item.json.text }}"
           },
           "matchingColumns": [
             "Telegram ID"
@@ -1834,8 +1812,8 @@
           "mappingMode": "defineBelow",
           "value": {
             "Telegram ID": "={{ $('Determine Action').item.json.chatId }}",
-            "State": "waiting_max_area",
-            "Min Area": "={{ $('Determine Action').item.json.text }}"
+            "State": "waiting_price",
+            "Max Area": "={{ $('Determine Action').item.json.text }}"
           },
           "matchingColumns": [
             "Telegram ID"
@@ -2147,47 +2125,17 @@
         ],
         [
           {
-            "node": "Generate District Menu",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Send Price Prompt",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Send Finish Success",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Send Invalid Price",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Update row in sheet",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
             "node": "Send a text message3",
             "type": "main",
             "index": 0
           }
         ],
         [
+          {
+            "node": "Update row in sheet1",
+            "type": "main",
+            "index": 0
+          },
           {
             "node": "Send a text message4",
             "type": "main",
@@ -2196,7 +2144,52 @@
         ],
         [
           {
+            "node": "Generate District Menu",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update row in sheet2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Price Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save State Price",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Vetting Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save State Finish",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
             "node": "Send a text message5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Invalid Price",
             "type": "main",
             "index": 0
           }
@@ -2221,13 +2214,6 @@
             "type": "main",
             "index": 0
           }
-        ],
-        [
-          {
-            "node": "Send Finish Success",
-            "type": "main",
-            "index": 0
-          }
         ]
       ]
     },
@@ -2242,17 +2228,7 @@
         ]
       ]
     },
-    "Send Price Prompt": {
-      "main": [
-        [
-          {
-            "node": "Save State Price",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
+    "Send Price Prompt": {},
     "Save State Price": {
       "main": [
         [
@@ -2269,6 +2245,11 @@
         [
           {
             "node": "Create Topic",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Finish Success",
             "type": "main",
             "index": 0
           }
@@ -2426,28 +2407,8 @@
         ]
       ]
     },
-    "Send a text message3": {
-      "main": [
-        [
-          {
-            "node": "Update row in sheet1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Send a text message4": {
-      "main": [
-        [
-          {
-            "node": "Update row in sheet2",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
+    "Send a text message3": {},
+    "Send a text message4": {},
     "Notify View - Edit Msg": {
       "main": [
         [
@@ -2458,7 +2419,11 @@
           }
         ]
       ]
-    }
+    },
+    "Send a text message5": {},
+    "Send Vetting Prompt": {},
+    "Update row in sheet1": {},
+    "Update row in sheet2": {}
   },
   "pinData": {},
   "meta": {
